@@ -1,0 +1,953 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HauGen — AI Diagnostic Intelligence for the Trades</title>
+  <meta name="description" content="HauGen gives plumbing technicians a confidence-scored second opinion in the field, in seconds. AI-powered diagnostic intelligence built for the trades." />
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+
+  <style>
+    /* ─── Design tokens ─────────────────────────────────────────── */
+    :root {
+      --c-navy:   #0B1E2D;   /* hero bg, footer, nav */
+      --c-navy-mid: #122333; /* card on dark bg */
+      --c-amber:  #C8811E;   /* CTA, accent, logo G */
+      --c-amber-hover: #B06D10;
+      --c-sand:   #F3EDE2;   /* content bg */
+      --c-sand-alt: #EBE4D8; /* alternating section */
+      --c-ink:    #1A2B38;   /* primary body text */
+      --c-muted:  #5A6B78;   /* secondary text */
+      --c-border: #D8D1C4;   /* subtle dividers */
+      --c-white:  #FFFFFF;
+
+      --font-display: 'Barlow Semi Condensed', sans-serif;
+      --font-body:    'Inter', sans-serif;
+
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 16px;
+
+      --section-pad: 96px 24px;
+      --section-pad-sm: 64px 20px;
+    }
+
+    /* ─── Reset & base ──────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: var(--font-body);
+      background: var(--c-sand);
+      color: var(--c-ink);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    img, svg { display: block; max-width: 100%; }
+    a { color: inherit; text-decoration: none; }
+
+    /* Focus states — real ones, not hidden */
+    :focus-visible {
+      outline: 3px solid var(--c-amber);
+      outline-offset: 3px;
+      border-radius: var(--radius-sm);
+    }
+
+    /* ─── Layout helpers ────────────────────────────────────────── */
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    .container--narrow {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    /* ─── Logotype ──────────────────────────────────────────────── */
+    .logotype {
+      font-family: var(--font-display);
+      font-weight: 800;
+      font-size: 1.5rem;
+      letter-spacing: -0.02em;
+      color: var(--c-white);
+    }
+
+    .logotype .G {
+      color: var(--c-amber);
+    }
+
+    .logotype--dark {
+      color: var(--c-navy);
+    }
+
+    .logotype--dark .G {
+      color: var(--c-amber);
+    }
+
+    /* ─── Nav ───────────────────────────────────────────────────── */
+    .nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: var(--c-navy);
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+
+    .nav__inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 18px 24px;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    .btn-nav {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--c-amber);
+      color: var(--c-white);
+      font-family: var(--font-body);
+      font-weight: 600;
+      font-size: 0.875rem;
+      padding: 10px 20px;
+      border-radius: var(--radius-sm);
+      border: none;
+      cursor: pointer;
+      transition: background 0.15s ease;
+      white-space: nowrap;
+    }
+
+    .btn-nav:hover { background: var(--c-amber-hover); }
+
+    /* ─── Hero ──────────────────────────────────────────────────── */
+    .hero {
+      background: var(--c-navy);
+      padding: 100px 24px 96px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Subtle geometric texture — two faint diagonal lines */
+    .hero::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(135deg, rgba(200,129,30,0.04) 1px, transparent 1px),
+        linear-gradient(45deg, rgba(200,129,30,0.04) 1px, transparent 1px);
+      background-size: 80px 80px;
+      pointer-events: none;
+    }
+
+    .hero__inner {
+      position: relative;
+      max-width: 860px;
+      margin: 0 auto;
+    }
+
+    .hero__eyebrow {
+      font-family: var(--font-body);
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--c-amber);
+      margin-bottom: 24px;
+    }
+
+    .hero__headline {
+      font-family: var(--font-display);
+      font-weight: 800;
+      font-size: clamp(2.8rem, 7vw, 5.5rem);
+      line-height: 1.05;
+      letter-spacing: -0.02em;
+      color: var(--c-white);
+      margin-bottom: 12px;
+    }
+
+    .hero__headline-answer {
+      display: block;
+      color: var(--c-amber);
+    }
+
+    .hero__sub {
+      font-size: clamp(1rem, 2vw, 1.2rem);
+      color: rgba(255,255,255,0.65);
+      max-width: 580px;
+      margin: 20px 0 40px;
+      line-height: 1.65;
+    }
+
+    .hero__cta-group {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--c-amber);
+      color: var(--c-white);
+      font-family: var(--font-body);
+      font-weight: 600;
+      font-size: 1rem;
+      padding: 14px 28px;
+      border-radius: var(--radius-sm);
+      border: none;
+      cursor: pointer;
+      transition: background 0.15s ease, transform 0.1s ease;
+    }
+
+    .btn-primary:hover {
+      background: var(--c-amber-hover);
+      transform: translateY(-1px);
+    }
+
+    .btn-primary:active { transform: none; }
+
+    .hero__note {
+      font-size: 0.8125rem;
+      color: rgba(255,255,255,0.35);
+    }
+
+    /* ─── Section base ──────────────────────────────────────────── */
+    .section {
+      padding: var(--section-pad);
+    }
+
+    .section--alt {
+      background: var(--c-sand-alt);
+    }
+
+    .section--dark {
+      background: var(--c-navy);
+    }
+
+    .section__label {
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--c-amber);
+      margin-bottom: 16px;
+    }
+
+    .section__label--light {
+      color: var(--c-amber);
+    }
+
+    .section__heading {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: clamp(1.8rem, 4vw, 2.8rem);
+      line-height: 1.1;
+      letter-spacing: -0.01em;
+      color: var(--c-ink);
+      margin-bottom: 20px;
+    }
+
+    .section__heading--light {
+      color: var(--c-white);
+    }
+
+    .section__body {
+      font-size: 1.0625rem;
+      color: var(--c-muted);
+      line-height: 1.7;
+      max-width: 600px;
+    }
+
+    .section__body--light {
+      color: rgba(255,255,255,0.6);
+    }
+
+    /* ─── Problem section ───────────────────────────────────────── */
+    .problem__layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 64px;
+      align-items: start;
+    }
+
+    .stat-callout {
+      display: flex;
+      flex-direction: column;
+      gap: 28px;
+    }
+
+    .stat-card {
+      background: var(--c-white);
+      border: 1px solid var(--c-border);
+      border-radius: var(--radius-md);
+      padding: 28px 32px;
+    }
+
+    .stat-card__number {
+      font-family: var(--font-display);
+      font-weight: 800;
+      font-size: 3rem;
+      line-height: 1;
+      color: var(--c-amber);
+      margin-bottom: 6px;
+    }
+
+    .stat-card__label {
+      font-size: 0.9375rem;
+      color: var(--c-muted);
+      line-height: 1.5;
+    }
+
+    /* ─── Features section ──────────────────────────────────────── */
+    .features__grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 2px;
+      margin-top: 56px;
+      border: 1px solid var(--c-border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      background: var(--c-border);
+    }
+
+    .feature-card {
+      background: var(--c-white);
+      padding: 40px 36px;
+    }
+
+    .feature-card__icon {
+      width: 44px;
+      height: 44px;
+      border-radius: var(--radius-sm);
+      background: rgba(200,129,30,0.10);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 20px;
+      font-size: 1.25rem;
+    }
+
+    .feature-card__title {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 1.2rem;
+      color: var(--c-ink);
+      margin-bottom: 10px;
+      letter-spacing: -0.01em;
+    }
+
+    .feature-card__body {
+      font-size: 0.9375rem;
+      color: var(--c-muted);
+      line-height: 1.65;
+    }
+
+    /* ─── Why Now section ───────────────────────────────────────── */
+    .why__points {
+      margin-top: 48px;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+
+    .why__point {
+      display: grid;
+      grid-template-columns: 40px 1fr;
+      gap: 20px;
+      align-items: start;
+      padding: 32px 0;
+      border-top: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .why__point:last-child {
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .why__point-num {
+      font-family: var(--font-display);
+      font-weight: 800;
+      font-size: 1.1rem;
+      color: var(--c-amber);
+      padding-top: 3px;
+    }
+
+    .why__point-title {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 1.15rem;
+      color: var(--c-white);
+      margin-bottom: 6px;
+      letter-spacing: -0.01em;
+    }
+
+    .why__point-body {
+      font-size: 0.9375rem;
+      color: rgba(255,255,255,0.55);
+      line-height: 1.65;
+    }
+
+    /* ─── CTA / Email capture ───────────────────────────────────── */
+    .cta-section {
+      background: var(--c-sand-alt);
+      padding: var(--section-pad);
+      text-align: center;
+    }
+
+    .cta-section__inner {
+      max-width: 560px;
+      margin: 0 auto;
+    }
+
+    .cta-section__heading {
+      font-family: var(--font-display);
+      font-weight: 800;
+      font-size: clamp(2rem, 5vw, 3rem);
+      line-height: 1.1;
+      letter-spacing: -0.02em;
+      color: var(--c-navy);
+      margin-bottom: 14px;
+    }
+
+    .cta-section__sub {
+      font-size: 1rem;
+      color: var(--c-muted);
+      line-height: 1.6;
+      margin-bottom: 36px;
+    }
+
+    .email-form {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .email-form__row {
+      display: flex;
+      gap: 10px;
+    }
+
+    .email-input {
+      flex: 1;
+      height: 52px;
+      border: 1.5px solid var(--c-border);
+      border-radius: var(--radius-sm);
+      padding: 0 16px;
+      font-family: var(--font-body);
+      font-size: 1rem;
+      color: var(--c-ink);
+      background: var(--c-white);
+      transition: border-color 0.15s ease;
+      outline: none;
+    }
+
+    .email-input::placeholder { color: #9eaab5; }
+
+    .email-input:focus {
+      border-color: var(--c-amber);
+      box-shadow: 0 0 0 3px rgba(200,129,30,0.15);
+    }
+
+    .email-input.is-error {
+      border-color: #c0392b;
+      box-shadow: 0 0 0 3px rgba(192,57,43,0.12);
+    }
+
+    .btn-submit {
+      height: 52px;
+      padding: 0 28px;
+      background: var(--c-navy);
+      color: var(--c-white);
+      font-family: var(--font-body);
+      font-weight: 600;
+      font-size: 0.9375rem;
+      border: none;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.15s ease;
+    }
+
+    .btn-submit:hover { background: #162e45; }
+    .btn-submit:disabled { opacity: 0.6; cursor: default; }
+
+    .form-error {
+      font-size: 0.875rem;
+      color: #c0392b;
+      text-align: left;
+      display: none;
+    }
+
+    .form-error.visible { display: block; }
+
+    .form-success {
+      display: none;
+      background: var(--c-white);
+      border: 1px solid var(--c-border);
+      border-radius: var(--radius-md);
+      padding: 32px;
+      text-align: center;
+    }
+
+    .form-success.visible { display: block; }
+
+    .form-success__icon {
+      font-size: 2rem;
+      margin-bottom: 12px;
+    }
+
+    .form-success__heading {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 1.5rem;
+      color: var(--c-ink);
+      margin-bottom: 8px;
+    }
+
+    .form-success__body {
+      font-size: 0.9375rem;
+      color: var(--c-muted);
+      line-height: 1.6;
+      margin-bottom: 20px;
+    }
+
+    .form-success__link {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--c-amber);
+      color: var(--c-white);
+      font-weight: 600;
+      font-size: 0.9375rem;
+      padding: 12px 24px;
+      border-radius: var(--radius-sm);
+      transition: background 0.15s;
+    }
+
+    .form-success__link:hover { background: var(--c-amber-hover); }
+
+    /* ─── Footer ────────────────────────────────────────────────── */
+    .footer {
+      background: var(--c-navy);
+      padding: 48px 24px;
+    }
+
+    .footer__inner {
+      max-width: 1100px;
+      margin: 0 auto;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 32px;
+      flex-wrap: wrap;
+    }
+
+    .footer__brand {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .footer__tagline {
+      font-size: 0.875rem;
+      color: rgba(255,255,255,0.4);
+      max-width: 260px;
+      line-height: 1.5;
+    }
+
+    .footer__links {
+      display: flex;
+      gap: 28px;
+      align-items: center;
+      padding-top: 4px;
+    }
+
+    .footer__link {
+      font-size: 0.875rem;
+      color: rgba(255,255,255,0.35);
+      transition: color 0.15s;
+    }
+
+    .footer__link:hover { color: rgba(255,255,255,0.7); }
+
+    .footer__copy {
+      width: 100%;
+      font-size: 0.8125rem;
+      color: rgba(255,255,255,0.2);
+      padding-top: 32px;
+      border-top: 1px solid rgba(255,255,255,0.06);
+      margin-top: 16px;
+    }
+
+    /* ─── Scroll-reveal ─────────────────────────────────────────── */
+    .reveal {
+      opacity: 0;
+      transform: translateY(20px);
+      transition: opacity 0.5s ease, transform 0.5s ease;
+    }
+
+    .reveal.is-visible {
+      opacity: 1;
+      transform: none;
+    }
+
+    /* ─── Responsive ────────────────────────────────────────────── */
+    @media (max-width: 768px) {
+      .section { padding: var(--section-pad-sm); }
+      .hero { padding: 72px 20px 64px; }
+
+      .problem__layout {
+        grid-template-columns: 1fr;
+        gap: 40px;
+      }
+
+      .features__grid {
+        grid-template-columns: 1fr;
+      }
+
+      .email-form__row {
+        flex-direction: column;
+      }
+
+      .btn-submit { width: 100%; }
+
+      .footer__inner {
+        flex-direction: column;
+        gap: 24px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .hero__headline { font-size: 2.4rem; }
+      .hero__cta-group { flex-direction: column; align-items: flex-start; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ─── Nav ─────────────────────────────────────────────────── -->
+  <header class="nav">
+    <div class="nav__inner">
+      <span class="logotype">Hau<span class="G">G</span>en</span>
+      <a href="#get-access" class="btn-nav">Explore the prototype</a>
+    </div>
+  </header>
+
+  <!-- ─── Hero ────────────────────────────────────────────────── -->
+  <section class="hero">
+    <div class="hero__inner">
+      <p class="hero__eyebrow">AI diagnostic intelligence for the trades</p>
+      <h1 class="hero__headline">
+        How do you know<br>it's the right call?
+        <span class="hero__headline-answer">Hau<span style="color:#C8811E">G</span>en.</span>
+      </h1>
+      <p class="hero__sub">
+        HauGen gives plumbing technicians a confidence-scored second opinion in the field — so the right repair gets done the first time, every time.
+      </p>
+      <div class="hero__cta-group">
+        <a href="#get-access" class="btn-primary">
+          Explore the prototype
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </a>
+        <span class="hero__note">No account required &mdash; click through in seconds</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── Problem ──────────────────────────────────────────────── -->
+  <section class="section" id="problem">
+    <div class="container">
+      <div class="problem__layout reveal">
+        <div>
+          <p class="section__label">The gap</p>
+          <h2 class="section__heading">The trades have been left behind</h2>
+          <p class="section__body" style="margin-bottom: 20px;">
+            AI diagnostic tools are standard in healthcare, aviation, and automotive — industries where a wrong call costs lives or billions. Plumbing, HVAC, and electrical have the same stakes and the same complexity, but almost none of the tooling.
+          </p>
+          <p class="section__body">
+            Meanwhile, a generation of master technicians is retiring, taking decades of diagnostic judgment with them. The industry needs a way to encode that knowledge and put it in the hands of the next generation — in the field, in real time.
+          </p>
+        </div>
+        <div class="stat-callout">
+          <div class="stat-card">
+            <div class="stat-card__number">500K+</div>
+            <div class="stat-card__label">Skilled trade job openings in the US — a gap that widens every year as experienced techs retire</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card__number">~40%</div>
+            <div class="stat-card__label">Of plumbing service callbacks are attributed to misdiagnosis or parts ordered without root-cause confirmation</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── What HauGen Does ─────────────────────────────────────── -->
+  <section class="section section--alt" id="product">
+    <div class="container">
+      <div class="reveal">
+        <p class="section__label">What HauGen does</p>
+        <h2 class="section__heading" style="max-width:520px;">Not a chatbot. A diagnostic partner.</h2>
+      </div>
+      <div class="features__grid reveal">
+        <div class="feature-card">
+          <div class="feature-card__icon">&#x1F9E0;</div>
+          <h3 class="feature-card__title">Branching diagnostic intelligence</h3>
+          <p class="feature-card__body">
+            A tech describes or photographs a symptom and HauGen walks them through a structured diagnostic path — guided reasoning, not a generic chatbot guess. Every branch is grounded in real defect taxonomies, not natural-language improvisation.
+          </p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-card__icon">&#x2705;</div>
+          <h3 class="feature-card__title">Confidence-scored second opinions</h3>
+          <p class="feature-card__body">
+            When the AI isn't certain — or the issue is safety-critical — the case routes to a credentialed expert review layer before a part gets ordered or a repair gets made. The tech gets a real answer, not a disclaimer.
+          </p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-card__icon">&#x1F4CA;</div>
+          <h3 class="feature-card__title">Built on real trade data</h3>
+          <p class="feature-card__body">
+            Trained on defect taxonomies, inspection standards, and manufacturer technical bulletins used across the industry — and continuously improving from every job run through the platform. The system gets smarter with every diagnosis.
+          </p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-card__icon">&#x1F527;</div>
+          <h3 class="feature-card__title">Works inside your existing tools</h3>
+          <p class="feature-card__body">
+            HauGen layers over the field service platforms companies already use. No rip-and-replace, no retraining, no new app for techs to adopt. It shows up where the work already happens.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── Why Now ──────────────────────────────────────────────── -->
+  <section class="section section--dark" id="why">
+    <div class="container">
+      <div class="reveal">
+        <p class="section__label section__label--light">Why HauGen, why now</p>
+        <h2 class="section__heading section__heading--light" style="max-width:560px;">The structural advantages compound over time</h2>
+      </div>
+      <div class="why__points reveal">
+        <div class="why__point">
+          <span class="why__point-num">01</span>
+          <div>
+            <div class="why__point-title">An overlooked market with real urgency</div>
+            <p class="why__point-body">The skilled trades represent a $500B+ annual services market in North America. AI investment in this sector is a fraction of what healthcare, legal, and finance have seen — despite comparable diagnostic complexity and a worsening labor shortage that creates immediate demand for a solution that works in the field today.</p>
+          </div>
+        </div>
+        <div class="why__point">
+          <span class="why__point-num">02</span>
+          <div>
+            <div class="why__point-title">Purpose-built reasoning, not a chatbot retrofit</div>
+            <p class="why__point-body">HauGen is built from the ground up for diagnostic reasoning in a trade context — structured branching logic, calibrated confidence scoring, and safety escalation pathways. This is clinical decision support for plumbing, not a scheduling tool with a chat window bolted on. That distinction is the product.</p>
+          </div>
+        </div>
+        <div class="why__point">
+          <span class="why__point-num">03</span>
+          <div>
+            <div class="why__point-title">A data and network advantage that's hard to replicate</div>
+            <p class="why__point-body">Every job run through HauGen improves the model. Every credentialed reviewer added to the network deepens the second-opinion layer. These are structural advantages that accrue over time — a competitor starting today faces a compounding gap, not just a feature gap.</p>
+          </div>
+        </div>
+        <div class="why__point">
+          <span class="why__point-num">04</span>
+          <div>
+            <div class="why__point-title">A B2B SaaS model built for the way trade businesses operate</div>
+            <p class="why__point-body">HauGen sells to the company, not the technician. Each company runs on its own data, its own customer history, its own pricing. That's not a limitation — it's the right architecture for a trade business's operating reality. HauGen is the platform they run on, branded as their own.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── Email capture ────────────────────────────────────────── -->
+  <section class="cta-section" id="get-access">
+    <div class="cta-section__inner reveal">
+      <p class="section__label" style="text-align:center;">See it for yourself</p>
+      <h2 class="cta-section__heading">Try the prototype</h2>
+      <p class="cta-section__sub">
+        Enter your email for instant access — then click through the live technician and admin experience.
+      </p>
+
+      <!-- Email form -->
+      <div id="form-wrap">
+        <form class="email-form" id="email-form" novalidate>
+          <div class="email-form__row">
+            <input
+              type="email"
+              id="email-input"
+              class="email-input"
+              placeholder="your@email.com"
+              autocomplete="email"
+              aria-label="Email address"
+              aria-describedby="form-error-msg"
+            />
+            <button type="submit" class="btn-submit" id="submit-btn">
+              Explore the prototype
+            </button>
+          </div>
+          <p class="form-error" id="form-error-msg" role="alert"></p>
+          <p style="font-size:0.8125rem;color:var(--c-muted);text-align:left;">
+            We'll never share your email. Unsubscribe anytime.
+          </p>
+        </form>
+      </div>
+
+      <!-- Success state (shown after submit) -->
+      <div class="form-success" id="form-success" aria-live="polite">
+        <div class="form-success__icon">&#x1F527;</div>
+        <h3 class="form-success__heading">You're in.</h3>
+        <p class="form-success__body" id="success-body">
+          Click below to explore the live prototype — see the technician diagnostic flow, the admin dashboard, and the estimate signing experience.
+        </p>
+        <a id="prototype-link" href="#" class="form-success__link" target="_blank" rel="noopener noreferrer">
+          Open the prototype
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <path d="M2 7h10M8 3l4 4-4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── Footer ───────────────────────────────────────────────── -->
+  <footer class="footer">
+    <div class="footer__inner">
+      <div class="footer__brand">
+        <span class="logotype">Hau<span class="G">G</span>en</span>
+        <p class="footer__tagline">AI diagnostic intelligence for the skilled trades. Built to get the right answer faster.</p>
+      </div>
+      <nav class="footer__links" aria-label="Footer navigation">
+        <a href="#" class="footer__link">Contact</a>
+        <a href="#" class="footer__link">Privacy</a>
+      </nav>
+      <p class="footer__copy">&copy; 2025 HauGen. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <script>
+    // ─── Prototype URL ──────────────────────────────────────────────
+    // UPDATE THIS when the product has a real deployed URL.
+    // If null or empty, the success state shows a "check your email" fallback.
+    const PROTOTYPE_URL = null; // e.g. "https://app.haugen.io"
+
+    // ─── Email capture ──────────────────────────────────────────────
+    // NOTE: This currently stores captured emails in localStorage only.
+    // Replace the saveEmail() function with a real API call to your
+    // CRM or mailing list provider (e.g. Mailchimp, ConvertKit,
+    // or a Vercel serverless function writing to a DB) before launch.
+    function saveEmail(email) {
+      try {
+        const key = 'haugen_signups';
+        const existing = JSON.parse(localStorage.getItem(key) || '[]');
+        if (!existing.includes(email)) {
+          existing.push(email);
+          localStorage.setItem(key, JSON.stringify(existing));
+        }
+      } catch (e) {
+        // localStorage unavailable — no-op, form flow continues
+      }
+    }
+
+    function isValidEmail(email) {
+      return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+    }
+
+    const form = document.getElementById('email-form');
+    const input = document.getElementById('email-input');
+    const errorMsg = document.getElementById('form-error-msg');
+    const submitBtn = document.getElementById('submit-btn');
+    const formWrap = document.getElementById('form-wrap');
+    const successBox = document.getElementById('form-success');
+    const successBody = document.getElementById('success-body');
+    const protoLink = document.getElementById('prototype-link');
+
+    function showError(msg) {
+      errorMsg.textContent = msg;
+      errorMsg.classList.add('visible');
+      input.classList.add('is-error');
+      input.setAttribute('aria-invalid', 'true');
+    }
+
+    function clearError() {
+      errorMsg.classList.remove('visible');
+      input.classList.remove('is-error');
+      input.removeAttribute('aria-invalid');
+    }
+
+    form.addEventListener('submit', function(e) {
+      e.preventDefault();
+      clearError();
+
+      const email = input.value.trim();
+
+      if (!email) {
+        showError('Please enter your email address to continue.');
+        input.focus();
+        return;
+      }
+
+      if (!isValidEmail(email)) {
+        showError('That doesn\'t look like a valid email address — please double-check.');
+        input.focus();
+        return;
+      }
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'One moment…';
+
+      saveEmail(email);
+
+      // Small intentional delay so it doesn't feel instant/broken
+      setTimeout(function() {
+        formWrap.style.display = 'none';
+
+        if (PROTOTYPE_URL) {
+          protoLink.href = PROTOTYPE_URL;
+          successBody.textContent = 'Click below to explore the live prototype — see the technician diagnostic flow, the admin dashboard, and the estimate signing experience.';
+        } else {
+          // Prototype URL not yet set — show fallback state
+          protoLink.style.display = 'none';
+          successBody.textContent = 'We\'ll send you access shortly. In the meantime, if you have questions, reach out directly — we\'re happy to walk you through it live.';
+        }
+
+        successBox.classList.add('visible');
+      }, 600);
+    });
+
+    // Live validation — clear error as user types
+    input.addEventListener('input', clearError);
+
+    // ─── Scroll reveal ──────────────────────────────────────────────
+    const observer = new IntersectionObserver(function(entries) {
+      entries.forEach(function(entry) {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('is-visible');
+          observer.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.12 });
+
+    document.querySelectorAll('.reveal').forEach(function(el) {
+      observer.observe(el);
+    });
+  </script>
+
+</body>
+</html>
