@@ -268,3 +268,276 @@ export function requestRestock(truckId: string, partId: string, requestedBy: str
 export function getTruckForTech(techId: string) {
   return db().prepare(`SELECT truck_id FROM users WHERE id = ?`).get(techId) as any;
 }
+
+// ---------- Admin: overview KPIs ----------
+export function getOverviewStats() {
+  const totalJobs = (db().prepare(`SELECT COUNT(*) AS n FROM jobs`).get() as any).n;
+  const closedSessions = db()
+    .prepare(`SELECT s.*, jo.matched FROM diagnostic_sessions s
+               JOIN job_outcomes jo ON jo.session_id = s.id`)
+    .all() as any[];
+  const matched = closedSessions.filter((s) => s.matched).length;
+  const accuracyPct = closedSessions.length ? Math.round((matched / closedSessions.length) * 1000) / 10 : 0;
+  const avgConfidence = closedSessions.length
+    ? Math.round((closedSessions.reduce((sum, s) => sum + (s.confidence ?? 0), 0) / closedSessions.length) * 10) / 10
+    : 0;
+  const secondOpinionCount = (db().prepare(`SELECT COUNT(*) AS n FROM second_opinions`).get() as any).n;
+  const safetyCriticalCount = (
+    db().prepare(`SELECT COUNT(*) AS n FROM diagnostic_sessions WHERE safety_critical = 1`).get() as any
+  ).n;
+  const lowStockCount = (
+    db().prepare(`SELECT COUNT(*) AS n FROM truck_stock WHERE quantity < threshold`).get() as any
+  ).n;
+  const activeTechs = (db().prepare(`SELECT COUNT(*) AS n FROM users WHERE role = 'TECH'`).get() as any).n;
+
+  return { totalJobs, closedCount: closedSessions.length, accuracyPct, avgConfidence, secondOpinionCount, safetyCriticalCount, lowStockCount, activeTechs };
+}
+
+export function getAccuracyTrend() {
+  return db()
+    .prepare(
+      `SELECT substr(jo.closed_at, 1, 10) AS day,
+              COUNT(*) AS total,
+              SUM(jo.matched) AS matched
+       FROM job_outcomes jo
+       GROUP BY day
+       ORDER BY day ASC`
+    )
+    .all() as any[];
+}
+
+export function listClosedSessions(filters: { techId?: string; matched?: string; minConfidence?: string } = {}) {
+  const clauses: string[] = [];
+  const params: any[] = [];
+  if (filters.techId) {
+    clauses.push("s.tech_id = ?");
+    params.push(filters.techId);
+  }
+  if (filters.matched === "true" || filters.matched === "false") {
+    clauses.push("jo.matched = ?");
+    params.push(filters.matched === "true" ? 1 : 0);
+  }
+  if (filters.minConfidence) {
+    clauses.push("s.confidence >= ?");
+    params.push(Number(filters.minConfidence));
+  }
+  const where = clauses.length ? `WHERE ${clauses.join(" AND ")}` : "";
+  return db()
+    .prepare(
+      `SELECT s.id AS session_id, s.primary_diagnosis, s.confidence, s.safety_critical, s.second_opinion_requested,
+              jo.actual_diagnosis, jo.matched, jo.closed_at,
+              u.name AS tech_name, c.name AS customer_name, j.job_type
+       FROM diagnostic_sessions s
+       JOIN job_outcomes jo ON jo.session_id = s.id
+       JOIN jobs j ON j.id = jo.job_id
+       JOIN customers c ON c.id = j.customer_id
+       JOIN users u ON u.id = s.tech_id
+       ${where}
+       ORDER BY jo.closed_at DESC`
+    )
+    .all(...params) as any[];
+}
+
+export function listTechsForFilter() {
+  return db().prepare(`SELECT id, name FROM users WHERE role = 'TECH' ORDER BY name`).all() as any[];
+}
+
+export function getIssueTypeBreakdown() {
+  return db()
+    .prepare(
+      `SELECT t.name AS tree_name, t.equipment_type, COUNT(*) AS n,
+              SUM(jo.matched) AS matched_n,
+              AVG(s.confidence) AS avg_confidence
+       FROM diagnostic_sessions s
+       JOIN job_outcomes jo ON jo.session_id = s.id
+       JOIN diagnostic_trees t ON t.id = s.tree_id
+       GROUP BY t.id
+       ORDER BY n DESC`
+    )
+    .all() as any[];
+}
+
+export function getIssueTypeDetail(treeId: string) {
+  return db()
+    .prepare(
+      `SELECT s.primary_diagnosis, COUNT(*) AS n, AVG(s.confidence) AS avg_confidence, SUM(jo.matched) AS matched_n
+       FROM diagnostic_sessions s
+       JOIN job_outcomes jo ON jo.session_id = s.id
+       WHERE s.tree_id = ?
+       GROUP BY s.primary_diagnosis
+       ORDER BY n DESC`
+    )
+    .all(treeId) as any[];
+}
+
+export function getConfidenceCalibration() {
+  return db()
+    .prepare(
+      `SELECT
+         CASE
+           WHEN s.confidence >= 80 THEN '80-100%'
+           WHEN s.confidence >= 65 THEN '65-79%'
+           WHEN s.confidence >= 50 THEN '50-64%'
+           ELSE '<50%'
+         END AS band,
+         COUNT(*) AS n,
+         SUM(jo.matched) AS matched_n
+       FROM diagnostic_sessions s
+       JOIN job_outcomes jo ON jo.session_id = s.id
+       GROUP BY band
+       ORDER BY MIN(s.confidence) DESC`
+    )
+    .all() as any[];
+}
+
+export function getTechPerformance() {
+  return db()
+    .prepare(
+      `SELECT u.id, u.name,
+              COUNT(*) AS total_jobs,
+              SUM(jo.matched) AS matched_n,
+              AVG(s.confidence) AS avg_confidence,
+              SUM(s.second_opinion_requested) AS second_opinions
+       FROM diagnostic_sessions s
+       JOIN job_outcomes jo ON jo.session_id = s.id
+       JOIN users u ON u.id = s.tech_id
+       GROUP BY u.id
+       ORDER BY total_jobs DESC`
+    )
+    .all() as any[];
+}
+
+// ---------- Admin: procurement / truck stock ----------
+export function listAllTruckStock() {
+  return db()
+    .prepare(
+      `SELECT ts.*, t.name AS truck_name, p.part_number, p.name AS part_name, p.category, p.unit_cost
+       FROM truck_stock ts
+       JOIN trucks t ON t.id = ts.truck_id
+       JOIN parts p ON p.id = ts.part_id
+       ORDER BY t.name, p.category, p.name`
+    )
+    .all() as any[];
+}
+
+export function listLowStock() {
+  return db()
+    .prepare(
+      `SELECT ts.*, t.name AS truck_name, p.part_number, p.name AS part_name, p.category, p.unit_cost
+       FROM truck_stock ts
+       JOIN trucks t ON t.id = ts.truck_id
+       JOIN parts p ON p.id = ts.part_id
+       WHERE ts.quantity < ts.threshold
+       ORDER BY (ts.threshold - ts.quantity) DESC`
+    )
+    .all() as any[];
+}
+
+export function listPendingRestockRequests() {
+  return db()
+    .prepare(
+      `SELECT rr.*, t.name AS truck_name, p.part_number, p.name AS part_name, p.unit_cost, u.name AS requested_by_name
+       FROM restock_requests rr
+       JOIN trucks t ON t.id = rr.truck_id
+       JOIN parts p ON p.id = rr.part_id
+       JOIN users u ON u.id = rr.requested_by
+       WHERE rr.status = 'pending'
+       ORDER BY rr.requested_at DESC`
+    )
+    .all() as any[];
+}
+
+export function getReorderSuggestions() {
+  return db()
+    .prepare(
+      `SELECT p.id AS part_id, p.part_number, p.name AS part_name, p.category, p.unit_cost,
+              COUNT(DISTINCT ts.truck_id) AS trucks_low,
+              SUM(MAX(ts.threshold - ts.quantity, 0)) AS total_deficit,
+              (SELECT COUNT(*) FROM diagnostic_sessions s
+                 WHERE s.parts_recommended_json LIKE '%' || p.part_number || '%') AS diagnostic_demand
+       FROM truck_stock ts
+       JOIN parts p ON p.id = ts.part_id
+       WHERE ts.quantity < ts.threshold
+       GROUP BY p.id
+       ORDER BY total_deficit DESC`
+    )
+    .all() as any[];
+}
+
+export function listVendorsForPart(partId: string) {
+  return db()
+    .prepare(
+      `SELECT v.id, v.name, v.lead_time_days, vp.price
+       FROM vendor_pricing vp JOIN vendors v ON v.id = vp.vendor_id
+       WHERE vp.part_id = ?
+       ORDER BY vp.price ASC`
+    )
+    .all(partId) as any[];
+}
+
+export function listVendors() {
+  return db()
+    .prepare(
+      `SELECT v.*, (SELECT COUNT(*) FROM vendor_pricing vp WHERE vp.vendor_id = v.id) AS parts_offered
+       FROM vendors v ORDER BY v.name`
+    )
+    .all() as any[];
+}
+
+export function createPurchaseOrder(vendorId: string, items: { partId: string; quantity: number; unitPrice: number }[], createdBy: string) {
+  const poId = rid("po");
+  const totalCost = items.reduce((sum, i) => sum + i.quantity * i.unitPrice, 0);
+  db()
+    .prepare(`INSERT INTO purchase_orders (id, vendor_id, status, created_by, total_cost) VALUES (?,?,?,?,?)`)
+    .run(poId, vendorId, "submitted", createdBy, totalCost);
+  for (const item of items) {
+    db()
+      .prepare(`INSERT INTO purchase_order_items (id, po_id, part_id, quantity, unit_price) VALUES (?,?,?,?,?)`)
+      .run(rid("poi"), poId, item.partId, item.quantity, item.unitPrice);
+  }
+  return poId;
+}
+
+export function listPurchaseOrders() {
+  return db()
+    .prepare(
+      `SELECT po.*, v.name AS vendor_name, u.name AS created_by_name,
+              (SELECT COUNT(*) FROM purchase_order_items WHERE po_id = po.id) AS item_count
+       FROM purchase_orders po
+       JOIN vendors v ON v.id = po.vendor_id
+       JOIN users u ON u.id = po.created_by
+       ORDER BY po.created_at DESC`
+    )
+    .all() as any[];
+}
+
+export function fulfillRestockRequest(restockId: string) {
+  db().prepare(`UPDATE restock_requests SET status = 'fulfilled' WHERE id = ?`).run(restockId);
+}
+
+// ---------- Admin: manufacturer library & review board ----------
+export function listManufacturers() {
+  return db().prepare(`SELECT * FROM manufacturers ORDER BY name`).all() as any[];
+}
+
+export function listBulletinsForManufacturer(manufacturerId: string) {
+  return db()
+    .prepare(
+      `SELECT tb.*, dc.code AS defect_code, dc.family AS defect_family
+       FROM technical_bulletins tb LEFT JOIN defect_codes dc ON dc.id = tb.defect_code_id
+       WHERE tb.manufacturer_id = ?
+       ORDER BY tb.bulletin_number`
+    )
+    .all(manufacturerId) as any[];
+}
+
+export function listReviewers() {
+  return db()
+    .prepare(
+      `SELECT u.*,
+              (SELECT COUNT(*) FROM second_opinions WHERE reviewer_id = u.id) AS total_reviews,
+              (SELECT COUNT(*) FROM second_opinions WHERE reviewer_id = u.id AND status = 'pending') AS pending_reviews
+       FROM users u WHERE u.role = 'REVIEWER' ORDER BY u.name`
+    )
+    .all() as any[];
+}
