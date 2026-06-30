@@ -9,8 +9,8 @@ export default async function ReviewLayout({ children }: { children: React.React
     <div className="flex min-h-screen flex-col bg-sand-50">
       <header className="flex items-center justify-between bg-navy-950 px-6 py-4 text-white">
         <Link href="/review" className="flex items-center gap-2">
-          <span className="flex h-8 w-8 items-center justify-center rounded-md bg-amber-500 font-bold text-navy-950">D</span>
-          <span className="font-semibold">DiagnosticOS — Review Board</span>
+          <span className="flex h-8 w-8 items-center justify-center rounded-md bg-amber-500 font-bold text-navy-950">H</span>
+          <span className="font-semibold">HauGen — Review Board</span>
         </Link>
         <div className="flex items-center gap-4">
           <span className="text-sm text-sand-200">{user.name} · {user.credential}</span>

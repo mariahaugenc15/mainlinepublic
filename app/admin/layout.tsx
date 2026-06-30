@@ -23,8 +23,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     <div className="flex min-h-screen bg-sand-50">
       <aside className="flex w-64 shrink-0 flex-col bg-navy-950 text-white">
         <div className="flex items-center gap-2 px-5 py-5">
-          <span className="flex h-8 w-8 items-center justify-center rounded-md bg-amber-500 font-bold text-navy-950">D</span>
-          <span className="font-semibold">DiagnosticOS</span>
+          <span className="flex h-8 w-8 items-center justify-center rounded-md bg-amber-500 font-bold text-navy-950">H</span>
+          <span className="font-semibold">HauGen</span>
         </div>
         <nav className="flex flex-1 flex-col gap-1 px-3 py-2">
           {NAV.map((item) => (

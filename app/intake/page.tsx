@@ -7,8 +7,8 @@ export default async function PublicIntakePage() {
   return (
     <div className="mx-auto min-h-screen max-w-lg bg-sand-50 px-4 py-8">
       <div className="mb-6 flex items-center gap-2">
-        <span className="flex h-8 w-8 items-center justify-center rounded-md bg-amber-500 font-bold text-navy-950">D</span>
-        <span className="font-semibold text-navy-900">DiagnosticOS Plumbing</span>
+        <span className="flex h-8 w-8 items-center justify-center rounded-md bg-amber-500 font-bold text-navy-950">H</span>
+        <span className="font-semibold text-navy-900">HauGen Plumbing</span>
       </div>
 
       <h1 className="mb-1 text-xl font-semibold text-navy-900">Request Service</h1>

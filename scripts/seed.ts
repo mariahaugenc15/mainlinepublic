@@ -1,4 +1,4 @@
-/* Seed script for DiagnosticOS. Run with: npx tsx scripts/seed.ts */
+/* Seed script for HauGen. Run with: npx tsx scripts/seed.ts */
 import bcrypt from "bcryptjs";
 import { ensureSchema } from "../lib/db";
 import { rid } from "../lib/ids";

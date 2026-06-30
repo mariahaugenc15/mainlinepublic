@@ -18,9 +18,9 @@ export default function LoginPage() {
       <div className="w-full max-w-md">
         <div className="mb-8 text-center">
           <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-lg bg-navy-900 text-amber-500 font-bold text-xl">
-            D
+            H
           </div>
-          <h1 className="text-2xl font-semibold text-navy-900">DiagnosticOS</h1>
+          <h1 className="text-2xl font-semibold text-navy-900">HauGen</h1>
           <p className="mt-1 text-sm text-ink-500">Field diagnostic intelligence for plumbing trades</p>
         </div>
 

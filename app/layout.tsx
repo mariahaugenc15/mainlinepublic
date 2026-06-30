@@ -15,7 +15,7 @@ const montserrat = Montserrat({
 });
 
 export const metadata: Metadata = {
-  title: "DiagnosticOS",
+  title: "HauGen",
   description: "Field diagnostic intelligence for plumbing trades.",
 };
 
