@@ -207,3 +207,39 @@ CREATE TABLE IF NOT EXISTS restock_requests (
   requested_at TEXT NOT NULL DEFAULT (datetime('now')),
   status TEXT NOT NULL CHECK (status IN ('pending','fulfilled')) DEFAULT 'pending'
 );
+
+-- Regional/jurisdictional calibration layer (EPA SDWIS ingestion)
+CREATE TABLE IF NOT EXISTS regional_water_data (
+  pwsid TEXT PRIMARY KEY,
+  pws_name TEXT NOT NULL,
+  pws_type TEXT,
+  city TEXT,
+  county TEXT,
+  state TEXT NOT NULL,
+  zip_code TEXT,
+  violation_count_total INTEGER NOT NULL DEFAULT 0,
+  violation_count_mcl INTEGER NOT NULL DEFAULT 0,
+  violation_count_mrdl INTEGER NOT NULL DEFAULT 0,
+  violation_count_tt INTEGER NOT NULL DEFAULT 0,
+  violation_count_monitoring INTEGER NOT NULL DEFAULT 0,
+  violation_count_resolved INTEGER NOT NULL DEFAULT 0,
+  violation_count_unresolved INTEGER NOT NULL DEFAULT 0,
+  most_recent_violation_date TEXT,
+  source TEXT NOT NULL DEFAULT 'live_api' CHECK (source IN ('live_api','bulk_csv')),
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_regional_water_county ON regional_water_data(state, county);
+CREATE INDEX IF NOT EXISTS idx_regional_water_zip ON regional_water_data(zip_code);
+
+CREATE TABLE IF NOT EXISTS ingestion_runs (
+  id TEXT PRIMARY KEY,
+  source TEXT NOT NULL CHECK (source IN ('live_api','bulk_csv')),
+  states TEXT,
+  started_at TEXT NOT NULL DEFAULT (datetime('now')),
+  finished_at TEXT,
+  rows_pulled INTEGER NOT NULL DEFAULT 0,
+  rows_upserted INTEGER NOT NULL DEFAULT 0,
+  status TEXT NOT NULL CHECK (status IN ('running','success','partial','failed')) DEFAULT 'running',
+  error_message TEXT
+);

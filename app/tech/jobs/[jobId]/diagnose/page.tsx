@@ -5,6 +5,7 @@ import {
   getBulletin,
   getJob,
   getNode,
+  getRegionalContextForAddress,
   getRootNode,
   getSession,
   getTree,
@@ -89,6 +90,9 @@ export default async function DiagnosePage({
 
   const secondOpinionRecommended = session.confidence < 65 || !!session.safety_critical;
 
+  const scaleRelated = /scale|hardness|mineral|sediment/i.test(session.primary_diagnosis || "");
+  const regionalContext = scaleRelated ? getRegionalContextForAddress(job.customer_address) : null;
+
   return (
     <div className="mx-auto max-w-lg">
       <BackBar jobId={jobId} treeName={tree.name} />
@@ -118,6 +122,15 @@ export default async function DiagnosePage({
           </div>
         )}
       </div>
+
+      {regionalContext && (
+        <div className="mt-4 rounded-xl border border-teal-500/30 bg-teal-500/5 p-4 text-sm text-ink-700">
+          <span className="font-semibold text-navy-800">Regional water data:</span> {regionalContext.county} County's water
+          system ({regionalContext.pws_name}) has {regionalContext.violation_count_unresolved} unresolved water quality
+          violation{regionalContext.violation_count_unresolved === 1 ? "" : "s"} on record — consistent with
+          hardness/scaling-related issues reported in this service area.
+        </div>
+      )}
 
       {secondary.length > 0 && (
         <div className="mt-4 rounded-xl border border-sand-300 bg-white p-5 shadow-sm">

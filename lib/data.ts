@@ -541,3 +541,44 @@ export function listReviewers() {
     )
     .all() as any[];
 }
+
+// ---------- Regional water data (SDWIS ingestion) ----------
+export function getRegionalWaterSummary() {
+  const row = db()
+    .prepare(
+      `SELECT COUNT(*) AS system_count,
+              SUM(CASE WHEN violation_count_unresolved > 0 THEN 1 ELSE 0 END) AS systems_with_unresolved,
+              SUM(violation_count_total) AS total_violations,
+              MAX(updated_at) AS last_updated
+       FROM regional_water_data`
+    )
+    .get() as any;
+  return row;
+}
+
+export function listRegionalWaterSystems() {
+  return db().prepare(`SELECT * FROM regional_water_data ORDER BY violation_count_unresolved DESC, pws_name ASC`).all() as any[];
+}
+
+export function getLatestIngestionRun() {
+  return db().prepare(`SELECT * FROM ingestion_runs ORDER BY started_at DESC LIMIT 1`).get() as any;
+}
+
+export function listIngestionRuns(limit = 10) {
+  return db().prepare(`SELECT * FROM ingestion_runs ORDER BY started_at DESC LIMIT ?`).all(limit) as any[];
+}
+
+/** Lightweight county lookup: matches a free-text address string against ingested county names. No geocoding — substring match only. */
+export function getRegionalContextForAddress(address: string | null | undefined) {
+  if (!address) return null;
+  const counties = db().prepare(`SELECT DISTINCT county FROM regional_water_data WHERE county IS NOT NULL`).all() as any[];
+  const upperAddress = address.toUpperCase();
+  const match = counties.find((c: any) => c.county && upperAddress.includes(c.county.toUpperCase()));
+  if (!match) return null;
+  return db()
+    .prepare(
+      `SELECT * FROM regional_water_data WHERE county = ? AND violation_count_unresolved > 0
+       ORDER BY violation_count_unresolved DESC LIMIT 1`
+    )
+    .get(match.county) as any;
+}

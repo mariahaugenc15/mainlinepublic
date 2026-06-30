@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { requireRole } from "@/lib/guard";
 import { createPurchaseOrder, fulfillRestockRequest, listVendorsForPart } from "@/lib/data";
+import { runLiveIngestion, runBulkCsvIngestion } from "@/lib/ingestion/sdwis";
 
 export async function createPurchaseOrderAction(formData: FormData) {
   const user = await requireRole("ADMIN");
@@ -22,4 +23,11 @@ export async function fulfillRestockAction(formData: FormData) {
   const restockId = String(formData.get("restockId"));
   fulfillRestockRequest(restockId);
   redirect("/admin/procurement?fulfilled=" + restockId);
+}
+
+export async function refreshRegionalDataAction(formData: FormData) {
+  await requireRole("ADMIN");
+  const source = String(formData.get("source") || "live_api");
+  const result = source === "bulk_csv" ? runBulkCsvIngestion() : await runLiveIngestion(["MI"]);
+  redirect(`/admin?regionalRefresh=${result.status}`);
 }
