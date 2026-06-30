@@ -1,16 +1,16 @@
-import { DatabaseSync } from "node:sqlite";
+import Database from "better-sqlite3";
 import path from "node:path";
 import fs from "node:fs";
 
 const DB_PATH = path.join(process.cwd(), "data", "diagnosticos.db");
 
-let _db: DatabaseSync | null = null;
+let _db: Database.Database | null = null;
 
-export function getDb(): DatabaseSync {
+export function getDb(): Database.Database {
   if (_db) return _db;
   const dir = path.dirname(DB_PATH);
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-  _db = new DatabaseSync(DB_PATH);
+  _db = new Database(DB_PATH);
   _db.exec("PRAGMA journal_mode = WAL;");
   _db.exec("PRAGMA foreign_keys = ON;");
   return _db;
@@ -22,7 +22,7 @@ export function dbPath() {
 
 let _initialized = false;
 
-function migrate(db: DatabaseSync) {
+function migrate(db: Database.Database) {
   const tryAlter = (sql: string) => {
     try {
       db.exec(sql);
@@ -73,7 +73,7 @@ function migrate(db: DatabaseSync) {
   }
 }
 
-export function ensureSchema(): DatabaseSync {
+export function ensureSchema(): Database.Database {
   const db = getDb();
   if (_initialized) return db;
   const schemaPath = path.join(process.cwd(), "lib", "schema.sql");
