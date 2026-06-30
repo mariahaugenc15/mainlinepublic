@@ -22,6 +22,8 @@
 }
 
 @theme inline {
+  --font-heading: var(--font-heading);
+  --font-body: var(--font-body);
   --color-navy-950: var(--color-navy-950);
   --color-navy-900: var(--color-navy-900);
   --color-navy-800: var(--color-navy-800);
@@ -45,9 +47,17 @@
 body {
   background: var(--color-sand-50);
   color: var(--color-ink-900);
-  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-family: var(--font-body), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-weight: 300;
 }
 
 * {
   box-sizing: border-box;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading), ui-sans-serif, system-ui, sans-serif;
+  font-weight: 400;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
 }
