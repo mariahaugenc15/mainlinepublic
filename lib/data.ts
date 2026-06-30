@@ -677,6 +677,44 @@ export function setCompanyName(name: string) {
   db().prepare(`UPDATE company_settings SET company_name = ?, updated_at = datetime('now') WHERE id = 'singleton'`).run(name);
 }
 
+export function setCompanyProfile(fields: {
+  company_name: string;
+  address: string;
+  phone: string;
+  support_email: string;
+  website: string;
+  logo_path?: string;
+  trade_license: string;
+  insurance_carrier: string;
+  service_area: string;
+}) {
+  const current = getCompanySettings();
+  db().prepare(`
+    UPDATE company_settings SET
+      company_name = ?,
+      address = ?,
+      phone = ?,
+      support_email = ?,
+      website = ?,
+      logo_path = ?,
+      trade_license = ?,
+      insurance_carrier = ?,
+      service_area = ?,
+      updated_at = datetime('now')
+    WHERE id = 'singleton'
+  `).run(
+    fields.company_name,
+    fields.address,
+    fields.phone,
+    fields.support_email,
+    fields.website,
+    fields.logo_path ?? current?.logo_path ?? '',
+    fields.trade_license,
+    fields.insurance_carrier,
+    fields.service_area,
+  );
+}
+
 export function setTechHourlyRate(userId: string, rate: number) {
   db().prepare(`UPDATE users SET hourly_rate = ? WHERE id = ?`).run(rate, userId);
 }

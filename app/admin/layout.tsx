@@ -3,11 +3,10 @@ import { requireRole } from "@/lib/guard";
 import { logoutAction } from "@/app/actions";
 import Brand from "@/app/_components/Brand";
 
-const NAV = [
+const NAV: ({ href: string; label: string } | null)[] = [
   { href: "/admin", label: "Overview" },
   { href: "/admin/intake", label: "Intake Queue" },
   { href: "/admin/jobs/new", label: "New Job" },
-  { href: "/admin/pricing", label: "Pricing" },
   { href: "/admin/accuracy", label: "Diagnostic Accuracy" },
   { href: "/admin/issues", label: "Issue Breakdown" },
   { href: "/admin/calibration", label: "Confidence Calibration" },
@@ -15,6 +14,9 @@ const NAV = [
   { href: "/admin/procurement", label: "Procurement & Stock" },
   { href: "/admin/manufacturers", label: "Manufacturer Library" },
   { href: "/admin/review-board", label: "Review Board" },
+  null,
+  { href: "/admin/company", label: "Company Profile" },
+  { href: "/admin/pricing", label: "Pricing" },
 ];
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -27,15 +29,19 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           <Brand size="sm" light />
         </div>
         <nav className="flex flex-1 flex-col gap-1 px-3 py-2">
-          {NAV.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className="rounded-md px-3 py-2 text-sm font-medium text-sand-200 hover:bg-white/10 hover:text-white"
-            >
-              {item.label}
-            </Link>
-          ))}
+          {NAV.map((item, i) =>
+            item === null ? (
+              <div key={`divider-${i}`} className="my-1 border-t border-white/10" />
+            ) : (
+              <Link
+                key={item.href}
+                href={item.href}
+                className="rounded-md px-3 py-2 text-sm font-medium text-sand-200 hover:bg-white/10 hover:text-white"
+              >
+                {item.label}
+              </Link>
+            )
+          )}
         </nav>
         <div className="border-t border-white/10 px-5 py-4">
           <p className="text-sm text-sand-200">{user.name}</p>

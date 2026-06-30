@@ -1,6 +1,8 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import path from "node:path";
+import fs from "node:fs";
 import { requireRole } from "@/lib/guard";
 import {
   assignJobTech,
@@ -9,6 +11,7 @@ import {
   fulfillRestockRequest,
   listVendorsForPart,
   setCompanyName,
+  setCompanyProfile,
   setDefaultMarkupPct,
   setTechHourlyRate,
 } from "@/lib/data";
@@ -92,4 +95,37 @@ export async function updateTechRateAction(formData: FormData) {
   const rate = Number(formData.get("hourlyRate") || 0);
   setTechHourlyRate(userId, rate);
   redirect(`/admin/pricing?updated=${userId}`);
+}
+
+export async function updateCompanyProfileAction(formData: FormData) {
+  await requireRole("ADMIN");
+
+  let logo_path: string | undefined;
+  const logoFile = formData.get("logo") as File | null;
+  if (logoFile && logoFile.size > 0) {
+    const ext = logoFile.name.split(".").pop()?.toLowerCase() ?? "png";
+    const allowed = ["png", "jpg", "jpeg", "svg", "webp"];
+    if (allowed.includes(ext)) {
+      const uploadsDir = path.join(process.cwd(), "public", "uploads");
+      if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
+      const buf = Buffer.from(await logoFile.arrayBuffer());
+      const filename = `logo.${ext}`;
+      fs.writeFileSync(path.join(uploadsDir, filename), buf);
+      logo_path = `/uploads/${filename}`;
+    }
+  }
+
+  setCompanyProfile({
+    company_name: String(formData.get("company_name") || "").trim() || "Your Company",
+    address: String(formData.get("address") || "").trim(),
+    phone: String(formData.get("phone") || "").trim(),
+    support_email: String(formData.get("support_email") || "").trim(),
+    website: String(formData.get("website") || "").trim(),
+    logo_path,
+    trade_license: String(formData.get("trade_license") || "").trim(),
+    insurance_carrier: String(formData.get("insurance_carrier") || "").trim(),
+    service_area: String(formData.get("service_area") || "").trim(),
+  });
+
+  redirect("/admin/company?saved=1");
 }

@@ -253,6 +253,14 @@ CREATE TABLE IF NOT EXISTS ingestion_runs (
 CREATE TABLE IF NOT EXISTS company_settings (
   id TEXT PRIMARY KEY DEFAULT 'singleton',
   company_name TEXT NOT NULL DEFAULT 'Your Company',
+  address TEXT NOT NULL DEFAULT '',
+  phone TEXT NOT NULL DEFAULT '',
+  support_email TEXT NOT NULL DEFAULT '',
+  website TEXT NOT NULL DEFAULT '',
+  logo_path TEXT NOT NULL DEFAULT '',
+  trade_license TEXT NOT NULL DEFAULT '',
+  insurance_carrier TEXT NOT NULL DEFAULT '',
+  service_area TEXT NOT NULL DEFAULT '',
   default_markup_pct REAL NOT NULL DEFAULT 20,
   updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
