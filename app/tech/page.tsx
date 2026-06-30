@@ -13,7 +13,15 @@ export default async function TechJobQueue({ searchParams }: { searchParams: Pro
 
   return (
     <div className="mx-auto max-w-lg">
-      <h1 className="mb-1 text-xl font-semibold text-navy-900">Today's Jobs</h1>
+      <div className="mb-1 flex items-center justify-between">
+        <h1 className="text-xl font-semibold text-navy-900">Today's Jobs</h1>
+        <Link
+          href="/tech/new-call"
+          className="rounded-lg bg-navy-900 px-3 py-1.5 text-sm font-semibold text-white active:bg-navy-800"
+        >
+          + New Call
+        </Link>
+      </div>
       <p className="mb-4 text-sm text-ink-500">{jobs.length} job{jobs.length === 1 ? "" : "s"} assigned</p>
 
       {closed && (

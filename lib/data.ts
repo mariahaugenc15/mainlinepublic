@@ -65,6 +65,10 @@ export function getTreeIdForEquipmentType(equipmentType: string | null) {
   return null;
 }
 
+export function listEquipmentTypes() {
+  return Object.keys(treeByEquipmentType);
+}
+
 export function getTree(treeId: string) {
   return db().prepare(`SELECT * FROM diagnostic_trees WHERE id = ?`).get(treeId) as any;
 }
@@ -581,4 +585,171 @@ export function getRegionalContextForAddress(address: string | null | undefined)
        ORDER BY violation_count_unresolved DESC LIMIT 1`
     )
     .get(match.county) as any;
+}
+
+// ---------- Intake (customer + equipment + job creation) ----------
+export function createIntakeJob(input: {
+  customerName: string;
+  address: string;
+  phone?: string;
+  email?: string;
+  leadSource?: string;
+  equipmentType: string;
+  equipmentMake?: string;
+  equipmentModel?: string;
+  jobType: string;
+  notes?: string;
+  techId?: string | null;
+  scheduledAt: string;
+  status?: "scheduled" | "in_progress";
+  source: "admin" | "tech" | "public_intake";
+}) {
+  const customerId = rid("cust");
+  db()
+    .prepare(`INSERT INTO customers (id, name, address, phone, email, lead_source) VALUES (?, ?, ?, ?, ?, ?)`)
+    .run(customerId, input.customerName, input.address, input.phone || null, input.email || null, input.leadSource || null);
+
+  const equipmentId = rid("equip");
+  db()
+    .prepare(`INSERT INTO equipment (id, customer_id, type, make, model) VALUES (?, ?, ?, ?, ?)`)
+    .run(equipmentId, customerId, input.equipmentType, input.equipmentMake || null, input.equipmentModel || null);
+
+  const jobId = rid("job");
+  db()
+    .prepare(
+      `INSERT INTO jobs (id, customer_id, equipment_id, tech_id, job_type, notes, scheduled_at, status, source)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    )
+    .run(
+      jobId,
+      customerId,
+      equipmentId,
+      input.techId || null,
+      input.jobType,
+      input.notes || null,
+      input.scheduledAt,
+      input.status || "scheduled",
+      input.source
+    );
+
+  return { jobId, customerId, equipmentId };
+}
+
+export function listUnassignedJobs() {
+  return db()
+    .prepare(
+      `SELECT j.id, j.job_type, j.notes, j.scheduled_at, j.created_at, j.source,
+              c.name AS customer_name, c.address AS customer_address, c.phone AS customer_phone,
+              c.email AS customer_email, c.lead_source,
+              e.type AS equipment_type, e.make AS equipment_make, e.model AS equipment_model
+       FROM jobs j
+       JOIN customers c ON c.id = j.customer_id
+       LEFT JOIN equipment e ON e.id = j.equipment_id
+       WHERE j.tech_id IS NULL AND j.status NOT IN ('closed', 'cancelled')
+       ORDER BY j.created_at ASC`
+    )
+    .all() as any[];
+}
+
+export function assignJobTech(jobId: string, techId: string, scheduledAt: string) {
+  db().prepare(`UPDATE jobs SET tech_id = ?, scheduled_at = ?, status = 'scheduled' WHERE id = ?`).run(techId, scheduledAt, jobId);
+}
+
+export function getUserHourlyRate(userId: string) {
+  const row = db().prepare(`SELECT hourly_rate FROM users WHERE id = ?`).get(userId) as any;
+  return row?.hourly_rate ?? 0;
+}
+
+export function listAllTechs() {
+  return db().prepare(`SELECT id, name, email, hourly_rate FROM users WHERE role = 'TECH' ORDER BY name`).all() as any[];
+}
+
+// ---------- Pricing & estimates ----------
+export function getCompanySettings() {
+  return db().prepare(`SELECT * FROM company_settings WHERE id = 'singleton'`).get() as any;
+}
+
+export function setDefaultMarkupPct(pct: number) {
+  db().prepare(`UPDATE company_settings SET default_markup_pct = ?, updated_at = datetime('now') WHERE id = 'singleton'`).run(pct);
+}
+
+export function setTechHourlyRate(userId: string, rate: number) {
+  db().prepare(`UPDATE users SET hourly_rate = ? WHERE id = ?`).run(rate, userId);
+}
+
+export function getPartByPartNumber(partNumber: string) {
+  return db().prepare(`SELECT * FROM parts WHERE part_number = ?`).get(partNumber) as any;
+}
+
+export function createEstimate(input: {
+  jobId: string;
+  sessionId?: string | null;
+  createdBy: string;
+  parts: { partNumber: string; name: string; qty: number }[];
+  laborHours: number;
+  laborRate: number;
+  markupPct: number;
+}) {
+  const pricedParts = input.parts.map((p) => {
+    const part = getPartByPartNumber(p.partNumber);
+    const unitCost = part?.unit_cost ?? 0;
+    return { ...p, unitCost, lineCost: unitCost * p.qty };
+  });
+  const partsCost = Math.round(pricedParts.reduce((sum, p) => sum + p.lineCost, 0) * 100) / 100;
+  const laborCost = Math.round(input.laborHours * input.laborRate * 100) / 100;
+  const subtotal = partsCost + laborCost;
+  const markupAmount = Math.round(subtotal * (input.markupPct / 100) * 100) / 100;
+  const total = Math.round((subtotal + markupAmount) * 100) / 100;
+
+  const estimateId = rid("est");
+  db()
+    .prepare(
+      `INSERT INTO estimates (id, job_id, session_id, created_by, parts_json, parts_cost, labor_hours, labor_rate, labor_cost, markup_pct, markup_amount, total)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    )
+    .run(
+      estimateId,
+      input.jobId,
+      input.sessionId || null,
+      input.createdBy,
+      JSON.stringify(pricedParts),
+      partsCost,
+      input.laborHours,
+      input.laborRate,
+      laborCost,
+      input.markupPct,
+      markupAmount,
+      total
+    );
+
+  return estimateId;
+}
+
+export function getEstimate(estimateId: string) {
+  const row = db()
+    .prepare(
+      `SELECT es.*, j.job_type, j.customer_id, c.name AS customer_name, c.address AS customer_address,
+              c.phone AS customer_phone, c.email AS customer_email, u.name AS created_by_name
+       FROM estimates es
+       JOIN jobs j ON j.id = es.job_id
+       JOIN customers c ON c.id = j.customer_id
+       JOIN users u ON u.id = es.created_by
+       WHERE es.id = ?`
+    )
+    .get(estimateId) as any;
+  return row;
+}
+
+export function getEstimateForJob(jobId: string) {
+  return db().prepare(`SELECT * FROM estimates WHERE job_id = ? ORDER BY created_at DESC LIMIT 1`).get(jobId) as any;
+}
+
+export function markEstimateSent(estimateId: string) {
+  db().prepare(`UPDATE estimates SET status = 'sent' WHERE id = ? AND status = 'draft'`).run(estimateId);
+}
+
+export function signEstimate(estimateId: string, signatureName: string, signatureData: string) {
+  db()
+    .prepare(`UPDATE estimates SET status = 'signed', signed_at = datetime('now'), signature_name = ?, signature_data = ? WHERE id = ?`)
+    .run(signatureName, signatureData, estimateId);
 }

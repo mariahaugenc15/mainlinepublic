@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS users (
   credential TEXT,
   years_experience INTEGER,
   truck_id TEXT,
+  hourly_rate REAL,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
@@ -18,6 +19,8 @@ CREATE TABLE IF NOT EXISTS customers (
   name TEXT NOT NULL,
   address TEXT NOT NULL,
   phone TEXT,
+  email TEXT,
+  lead_source TEXT,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
@@ -92,10 +95,12 @@ CREATE TABLE IF NOT EXISTS jobs (
   id TEXT PRIMARY KEY,
   customer_id TEXT NOT NULL REFERENCES customers(id),
   equipment_id TEXT REFERENCES equipment(id),
-  tech_id TEXT NOT NULL REFERENCES users(id),
+  tech_id TEXT REFERENCES users(id),
   job_type TEXT NOT NULL,
+  notes TEXT,
   scheduled_at TEXT NOT NULL,
   status TEXT NOT NULL CHECK (status IN ('scheduled','in_progress','closed','cancelled')) DEFAULT 'scheduled',
+  source TEXT NOT NULL DEFAULT 'admin' CHECK (source IN ('admin','tech','public_intake')),
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
@@ -242,4 +247,32 @@ CREATE TABLE IF NOT EXISTS ingestion_runs (
   rows_upserted INTEGER NOT NULL DEFAULT 0,
   status TEXT NOT NULL CHECK (status IN ('running','success','partial','failed')) DEFAULT 'running',
   error_message TEXT
+);
+
+-- Pricing & estimates
+CREATE TABLE IF NOT EXISTS company_settings (
+  id TEXT PRIMARY KEY DEFAULT 'singleton',
+  default_markup_pct REAL NOT NULL DEFAULT 20,
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+INSERT OR IGNORE INTO company_settings (id, default_markup_pct) VALUES ('singleton', 20);
+
+CREATE TABLE IF NOT EXISTS estimates (
+  id TEXT PRIMARY KEY,
+  job_id TEXT NOT NULL REFERENCES jobs(id),
+  session_id TEXT REFERENCES diagnostic_sessions(id),
+  created_by TEXT NOT NULL REFERENCES users(id),
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  parts_json TEXT NOT NULL DEFAULT '[]',
+  parts_cost REAL NOT NULL DEFAULT 0,
+  labor_hours REAL NOT NULL DEFAULT 0,
+  labor_rate REAL NOT NULL DEFAULT 0,
+  labor_cost REAL NOT NULL DEFAULT 0,
+  markup_pct REAL NOT NULL DEFAULT 0,
+  markup_amount REAL NOT NULL DEFAULT 0,
+  total REAL NOT NULL DEFAULT 0,
+  status TEXT NOT NULL CHECK (status IN ('draft','sent','signed')) DEFAULT 'draft',
+  signed_at TEXT,
+  signature_name TEXT,
+  signature_data TEXT
 );

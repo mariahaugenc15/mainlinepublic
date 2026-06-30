@@ -13,8 +13,8 @@ import {
   getTruckStock,
   listVisionCategories,
 } from "@/lib/data";
-import { advanceAction, requestSecondOpinionAction } from "@/app/tech/actions";
-import { completeSessionWithResult } from "@/lib/data";
+import { advanceAction, generateEstimateAction, requestSecondOpinionAction } from "@/app/tech/actions";
+import { completeSessionWithResult, getEstimateForJob } from "@/lib/data";
 import PhotoCapture from "@/app/tech/_components/PhotoCapture";
 
 export default async function DiagnosePage({
@@ -93,6 +93,8 @@ export default async function DiagnosePage({
   const scaleRelated = /scale|hardness|mineral|sediment/i.test(session.primary_diagnosis || "");
   const regionalContext = scaleRelated ? getRegionalContextForAddress(job.customer_address) : null;
 
+  const estimate = getEstimateForJob(jobId);
+
   return (
     <div className="mx-auto max-w-lg">
       <BackBar jobId={jobId} treeName={tree.name} />
@@ -167,6 +169,23 @@ export default async function DiagnosePage({
       )}
 
       <div className="mt-6 flex flex-col gap-3">
+        {estimate ? (
+          <Link
+            href={`/tech/jobs/${jobId}/estimate?estimate=${estimate.id}`}
+            className="flex h-12 items-center justify-center rounded-xl border border-teal-500/40 bg-teal-500/5 text-sm font-semibold text-teal-700 active:bg-teal-500/10"
+          >
+            View Estimate (${estimate.total.toFixed(2)})
+          </Link>
+        ) : (
+          <form action={generateEstimateAction.bind(null, jobId, sessionId)}>
+            <button
+              type="submit"
+              className="flex h-12 w-full items-center justify-center rounded-xl border border-teal-500/40 bg-teal-500/5 text-sm font-semibold text-teal-700 active:bg-teal-500/10"
+            >
+              Generate Estimate
+            </button>
+          </form>
+        )}
         {!session.second_opinion_requested && secondOpinionRecommended && (
           <form action={requestSecondOpinionAction.bind(null, jobId, sessionId)}>
             <button

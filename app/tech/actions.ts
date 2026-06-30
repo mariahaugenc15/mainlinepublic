@@ -5,12 +5,17 @@ import { requireRole } from "@/lib/guard";
 import {
   appendPathStep,
   closeJob,
+  createEstimate,
+  createIntakeJob,
   createSession,
   getChildNode,
+  getCompanySettings,
   getJob,
   getSecondOpinion,
   getSession,
   getTreeIdForEquipmentType,
+  getUserHourlyRate,
+  markEstimateSent,
   recordPhotoAnalysis,
   requestRestock,
   requestSecondOpinion,
@@ -109,4 +114,50 @@ export async function cancelJobDiagnosticAction(jobId: string) {
   await requireRole("TECH");
   setJobStatus(jobId, "scheduled");
   redirect(`/tech/jobs/${jobId}`);
+}
+
+export async function createOnSiteCallAction(formData: FormData) {
+  const user = await requireRole("TECH");
+  const { jobId } = createIntakeJob({
+    customerName: String(formData.get("customerName")),
+    address: String(formData.get("address")),
+    phone: String(formData.get("phone") || ""),
+    equipmentType: String(formData.get("equipmentType")),
+    equipmentMake: String(formData.get("equipmentMake") || ""),
+    equipmentModel: String(formData.get("equipmentModel") || ""),
+    jobType: String(formData.get("jobType")),
+    notes: String(formData.get("notes") || ""),
+    techId: user.id,
+    scheduledAt: new Date().toISOString(),
+    status: "in_progress",
+    source: "tech",
+  });
+  redirect(`/tech/jobs/${jobId}`);
+}
+
+export async function generateEstimateAction(jobId: string, sessionId: string) {
+  const user = await requireRole("TECH");
+  const session = getSession(sessionId);
+  const parts = JSON.parse(session.parts_recommended_json || "[]") as { partNumber: string; name: string; qty: number }[];
+  const laborHours = Math.round(((session.est_repair_time_minutes || 0) / 60) * 100) / 100;
+  const laborRate = getUserHourlyRate(user.id);
+  const markupPct = getCompanySettings().default_markup_pct;
+
+  const estimateId = createEstimate({
+    jobId,
+    sessionId,
+    createdBy: user.id,
+    parts,
+    laborHours,
+    laborRate,
+    markupPct,
+  });
+
+  redirect(`/tech/jobs/${jobId}/estimate?estimate=${estimateId}`);
+}
+
+export async function sendEstimateAction(jobId: string, estimateId: string) {
+  await requireRole("TECH");
+  markEstimateSent(estimateId);
+  redirect(`/tech/jobs/${jobId}/estimate?estimate=${estimateId}`);
 }
