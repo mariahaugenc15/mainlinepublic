@@ -8,6 +8,7 @@ import {
   createIntakeJob,
   fulfillRestockRequest,
   listVendorsForPart,
+  setCompanyName,
   setDefaultMarkupPct,
   setTechHourlyRate,
 } from "@/lib/data";
@@ -68,6 +69,14 @@ export async function assignIntakeJobAction(formData: FormData) {
   const scheduledAt = String(formData.get("scheduledAt"));
   assignJobTech(jobId, techId, scheduledAt);
   redirect(`/admin/intake?assigned=${jobId}`);
+}
+
+export async function updateCompanyNameAction(formData: FormData) {
+  await requireRole("ADMIN");
+  const name = String(formData.get("companyName") || "").trim();
+  if (!name) return;
+  setCompanyName(name);
+  redirect(`/admin/pricing?updated=name`);
 }
 
 export async function updateMarkupAction(formData: FormData) {

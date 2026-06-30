@@ -1,6 +1,6 @@
 import { requireRole } from "@/lib/guard";
 import { listAllTechs, getCompanySettings } from "@/lib/data";
-import { updateMarkupAction, updateTechRateAction } from "@/app/admin/actions";
+import { updateCompanyNameAction, updateMarkupAction, updateTechRateAction } from "@/app/admin/actions";
 
 export default async function PricingPage({ searchParams }: { searchParams: Promise<{ updated?: string }> }) {
   await requireRole("ADMIN");
@@ -15,9 +15,29 @@ export default async function PricingPage({ searchParams }: { searchParams: Prom
 
       {updated && (
         <div className="mb-4 rounded-lg border border-success/30 bg-success/10 px-4 py-2.5 text-sm font-medium text-success">
-          Pricing updated.
+          {updated === "name" ? "Company name updated." : "Pricing updated."}
         </div>
       )}
+
+      <div className="mb-6 rounded-xl border border-sand-300 bg-white p-5 shadow-sm">
+        <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-ink-500">Company name</p>
+        <p className="mb-3 text-sm text-ink-500">Shown to customers on intake forms and estimates, alongside "powered by HauGen".</p>
+        <form action={updateCompanyNameAction} className="flex items-end gap-3">
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-medium text-ink-700">Company name</label>
+            <input
+              type="text"
+              name="companyName"
+              defaultValue={settings.company_name}
+              required
+              className="h-10 w-64 rounded-lg border border-sand-300 px-3 text-sm"
+            />
+          </div>
+          <button type="submit" className="h-10 rounded-lg bg-navy-900 px-4 text-sm font-semibold text-white hover:bg-navy-800">
+            Save
+          </button>
+        </form>
+      </div>
 
       <div className="mb-6 rounded-xl border border-sand-300 bg-white p-5 shadow-sm">
         <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-ink-500">Company markup</p>

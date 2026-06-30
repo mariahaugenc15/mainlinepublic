@@ -673,6 +673,10 @@ export function setDefaultMarkupPct(pct: number) {
   db().prepare(`UPDATE company_settings SET default_markup_pct = ?, updated_at = datetime('now') WHERE id = 'singleton'`).run(pct);
 }
 
+export function setCompanyName(name: string) {
+  db().prepare(`UPDATE company_settings SET company_name = ?, updated_at = datetime('now') WHERE id = 'singleton'`).run(name);
+}
+
 export function setTechHourlyRate(userId: string, rate: number) {
   db().prepare(`UPDATE users SET hourly_rate = ? WHERE id = ?`).run(rate, userId);
 }

@@ -252,6 +252,7 @@ CREATE TABLE IF NOT EXISTS ingestion_runs (
 -- Pricing & estimates
 CREATE TABLE IF NOT EXISTS company_settings (
   id TEXT PRIMARY KEY DEFAULT 'singleton',
+  company_name TEXT NOT NULL DEFAULT 'Your Company',
   default_markup_pct REAL NOT NULL DEFAULT 20,
   updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );

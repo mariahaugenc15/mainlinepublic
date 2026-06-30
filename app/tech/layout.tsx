@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { requireRole } from "@/lib/guard";
 import { logoutAction } from "@/app/actions";
+import Brand from "@/app/_components/Brand";
 
 export default async function TechLayout({ children }: { children: React.ReactNode }) {
   const user = await requireRole("TECH");
@@ -8,9 +9,8 @@ export default async function TechLayout({ children }: { children: React.ReactNo
   return (
     <div className="flex min-h-screen flex-col bg-sand-50">
       <header className="sticky top-0 z-10 flex items-center justify-between bg-navy-950 px-4 py-3 text-white">
-        <Link href="/tech" className="flex items-center gap-2">
-          <span className="flex h-8 w-8 items-center justify-center rounded-md bg-amber-500 font-bold text-navy-950">H</span>
-          <span className="font-semibold">HauGen</span>
+        <Link href="/tech">
+          <Brand size="sm" light />
         </Link>
         <div className="flex items-center gap-3">
           <span className="hidden text-sm text-sand-200 sm:inline">{user.name}</span>

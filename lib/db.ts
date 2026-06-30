@@ -35,6 +35,7 @@ function migrate(db: DatabaseSync) {
   tryAlter(`ALTER TABLE customers ADD COLUMN lead_source TEXT`);
   tryAlter(`ALTER TABLE jobs ADD COLUMN notes TEXT`);
   tryAlter(`ALTER TABLE jobs ADD COLUMN source TEXT NOT NULL DEFAULT 'admin'`);
+  tryAlter(`ALTER TABLE company_settings ADD COLUMN company_name TEXT NOT NULL DEFAULT 'Your Company'`);
 
   // jobs.tech_id was originally NOT NULL; rebuild the table to allow NULL so
   // public-intake jobs can sit unassigned until a dispatcher assigns a tech.
