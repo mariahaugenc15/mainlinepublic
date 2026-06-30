@@ -1,26 +1,53 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --color-navy-950: #0b1f24;
+  --color-navy-900: #102e35;
+  --color-navy-800: #163e47;
+  --color-navy-700: #1f5260;
+  --color-navy-600: #2a6a7a;
+  --color-teal-500: #2f8a92;
+  --color-amber-500: #d98f2b;
+  --color-amber-600: #b8741c;
+  --color-amber-100: #fbe6c8;
+  --color-sand-50: #faf7f0;
+  --color-sand-100: #f3ede1;
+  --color-sand-200: #e7decb;
+  --color-sand-300: #d8cab0;
+  --color-ink-900: #1c2522;
+  --color-ink-700: #3a4641;
+  --color-ink-500: #5c6864;
+  --color-danger: #b3401f;
+  --color-success: #2f7a4f;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-navy-950: var(--color-navy-950);
+  --color-navy-900: var(--color-navy-900);
+  --color-navy-800: var(--color-navy-800);
+  --color-navy-700: var(--color-navy-700);
+  --color-navy-600: var(--color-navy-600);
+  --color-teal-500: var(--color-teal-500);
+  --color-amber-500: var(--color-amber-500);
+  --color-amber-600: var(--color-amber-600);
+  --color-amber-100: var(--color-amber-100);
+  --color-sand-50: var(--color-sand-50);
+  --color-sand-100: var(--color-sand-100);
+  --color-sand-200: var(--color-sand-200);
+  --color-sand-300: var(--color-sand-300);
+  --color-ink-900: var(--color-ink-900);
+  --color-ink-700: var(--color-ink-700);
+  --color-ink-500: var(--color-ink-500);
+  --color-danger: var(--color-danger);
+  --color-success: var(--color-success);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-sand-50);
+  color: var(--color-ink-900);
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
 }
