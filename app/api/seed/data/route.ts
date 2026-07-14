@@ -310,13 +310,13 @@ export async function GET(req: NextRequest) {
       ('so_02','ses_s03','rev_2',$1,'pending')`, [daysAgo(18)]);
 
     // Deplete some truck stock to trigger low-stock alerts and restock requests
-    await sql(`UPDATE truck_stock SET quantity=1 WHERE truck_id='truck_1' AND part_id IN (SELECT id FROM parts WHERE part_number IN ('THERMO-NAT-24MV','ANODE-MG-44'))`);
+    await sql(`UPDATE truck_stock SET quantity=1 WHERE truck_id='truck_1' AND part_id IN (SELECT id FROM parts WHERE part_number IN ('TC-UNIV-18','GCV-STD-40'))`);
     await sql(`UPDATE truck_stock SET quantity=0 WHERE truck_id='truck_2' AND part_id IN (SELECT id FROM parts WHERE part_number='FLAP-UNIV-3IN')`);
     await sql(`UPDATE truck_stock SET quantity=1 WHERE truck_id='truck_2' AND part_id IN (SELECT id FROM parts WHERE part_number='FLOAT-SW-UNIV')`);
 
     // Restock requests from techs
     await sql(`INSERT INTO restock_requests (id,truck_id,part_id,requested_by,requested_at,status) VALUES
-      ('rst_01','truck_1',(SELECT id FROM parts WHERE part_number='THERMO-NAT-24MV'),'tech_1',$1,'pending')`, [daysAgo(3)]);
+      ('rst_01','truck_1',(SELECT id FROM parts WHERE part_number='TC-UNIV-18'),'tech_1',$1,'pending')`, [daysAgo(3)]);
     await sql(`INSERT INTO restock_requests (id,truck_id,part_id,requested_by,requested_at,status) VALUES
       ('rst_02','truck_2',(SELECT id FROM parts WHERE part_number='FLAP-UNIV-3IN'),'tech_2',$1,'pending')`, [daysAgo(1)]);
 
