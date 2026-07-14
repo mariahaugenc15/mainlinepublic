@@ -5,8 +5,7 @@ import Brand from "@/app/_components/Brand";
 
 const NAV: ({ href: string; label: string } | null)[] = [
   { href: "/admin", label: "Overview" },
-  { href: "/admin/intake", label: "Intake Queue" },
-  { href: "/admin/jobs/new", label: "New Job" },
+  { href: "/admin/intake", label: "Job Queue" },
   { href: "/admin/accuracy", label: "Diagnostic Accuracy" },
   { href: "/admin/issues", label: "Issue Breakdown" },
   { href: "/admin/calibration", label: "Confidence Calibration" },

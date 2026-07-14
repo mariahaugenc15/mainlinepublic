@@ -183,14 +183,149 @@ export async function GET(req: NextRequest) {
       ]
     }, null, null);
 
-    // A few demo jobs
+    // ── Rich demo dataset ────────────────────────────────────────────────────
+    const daysAgo = (n: number) => new Date(Date.now() - n * 864e5).toISOString();
+
+    // Customers
+    await sql(`INSERT INTO customers (id,name,address,phone,lead_source) VALUES
+      ('cust_01','James Smith','123 Maple St, Springvale, OH','(614) 555-0101','Google'),
+      ('cust_02','Linda Johnson','456 Oak Ave, Springvale, OH','(614) 555-0202','Referral'),
+      ('cust_03','Robert Chen','789 Pine Rd, Glendale, OH','(614) 555-0303','Yelp'),
+      ('cust_04','Maria Garcia','321 Elm St, Riverside, OH','(614) 555-0404','Google'),
+      ('cust_05','David Kim','654 Birch Ln, Eastbrook, OH','(614) 555-0505','Referral'),
+      ('cust_06','Sarah Williams','987 Cedar Dr, Westfield, OH','(614) 555-0606','Angi'),
+      ('cust_07','Michael Brown','246 Walnut Ave, Northgate, OH','(614) 555-0707','Google'),
+      ('cust_08','Jennifer Davis','135 Spruce St, Lakewood, OH','(614) 555-0808','Referral'),
+      ('cust_09','Thomas Wilson','802 Ash Blvd, Hillcrest, OH','(614) 555-0909','Yelp'),
+      ('cust_10','Patricia Moore','419 Oak Park Rd, Fairview, OH','(614) 555-1010','Google'),
+      ('cust_11','Christopher Taylor','73 Meadow Ln, Sycamore, OH','(614) 555-1111','Referral'),
+      ('cust_12','Jessica Anderson','560 Riverside Dr, Clayton, OH','(614) 555-1212','Angi')`);
+
+    // Completed jobs — 20 across all 5 trees
+    type JobRow = [string,string,string,string,string,string,string];
+    const completedJobs: JobRow[] = [
+      // Gas Water Heater — 5 jobs
+      ['job_h01','cust_01','tech_1','Gas Water Heater Service',daysAgo(55),'completed',daysAgo(55)],
+      ['job_h02','cust_02','tech_2','Gas Water Heater Service',daysAgo(45),'completed',daysAgo(45)],
+      ['job_h03','cust_03','tech_1','Water Heater Inspection',daysAgo(38),'completed',daysAgo(38)],
+      ['job_h04','cust_04','tech_2','Gas Water Heater Service',daysAgo(27),'completed',daysAgo(27)],
+      ['job_h05','cust_05','tech_1','Water Heater No Hot Water',daysAgo(14),'completed',daysAgo(14)],
+      // Toilet — 5 jobs
+      ['job_t01','cust_06','tech_2','Toilet Repair',daysAgo(50),'completed',daysAgo(50)],
+      ['job_t02','cust_07','tech_1','Running Toilet',daysAgo(41),'completed',daysAgo(41)],
+      ['job_t03','cust_08','tech_2','Toilet Service',daysAgo(33),'completed',daysAgo(33)],
+      ['job_t04','cust_09','tech_1','Toilet Phantom Flush',daysAgo(22),'completed',daysAgo(22)],
+      ['job_t05','cust_10','tech_2','Running Toilet',daysAgo(9),'completed',daysAgo(9)],
+      // Drain — 4 jobs
+      ['job_d01','cust_11','tech_1','Drain Clog',daysAgo(47),'completed',daysAgo(47)],
+      ['job_d02','cust_12','tech_2','Slow Drain',daysAgo(36),'completed',daysAgo(36)],
+      ['job_d03','cust_01','tech_1','Drain Backup',daysAgo(25),'completed',daysAgo(25)],
+      ['job_d04','cust_02','tech_2','Drain Clog',daysAgo(12),'completed',daysAgo(12)],
+      // Sump Pump — 3 jobs
+      ['job_s01','cust_03','tech_1','Sump Pump Failure',daysAgo(52),'completed',daysAgo(52)],
+      ['job_s02','cust_04','tech_2','Sump Pump Not Working',daysAgo(31),'completed',daysAgo(31)],
+      ['job_s03','cust_05','tech_1','Sump Pump Service',daysAgo(18),'completed',daysAgo(18)],
+      // Water Pressure — 3 jobs
+      ['job_p01','cust_06','tech_2','Low Water Pressure',daysAgo(43),'completed',daysAgo(43)],
+      ['job_p02','cust_07','tech_1','Water Pressure Issues',daysAgo(29),'completed',daysAgo(29)],
+      ['job_p03','cust_08','tech_2','Whole-House Low Pressure',daysAgo(7),'completed',daysAgo(7)],
+    ];
+    for (const [id,cid,tid,jtype,sat,status,cat] of completedJobs) {
+      await sql(`INSERT INTO jobs (id,customer_id,tech_id,job_type,scheduled_at,status,created_at) VALUES ($1,$2,$3,$4,$5,$6,$7)`,
+        [id,cid,tid,jtype,sat,status,cat]);
+    }
+
+    // Diagnostic sessions (completed)
+    type SessionRow = [string,string,string,string,string,string,string,number,number,string];
+    const sessions: SessionRow[] = [
+      // Gas WH — mix of high/mid/low confidence
+      ['ses_h01','job_h01','tree_gwh','tech_1',daysAgo(55),daysAgo(55),'Thermocouple / pilot assembly failure',88,1,'[]'],
+      ['ses_h02','job_h02','tree_gwh','tech_2',daysAgo(45),daysAgo(45),'Thermocouple / pilot assembly failure',85,1,'[]'],
+      ['ses_h03','job_h03','tree_gwh','tech_1',daysAgo(38),daysAgo(38),'Dip tube collapse — cold-water short-circuit',72,1,'[]'],
+      ['ses_h04','job_h04','tree_gwh','tech_2',daysAgo(27),daysAgo(27),'Anode rod fully depleted, tank corrosion',65,0,'[]'],
+      ['ses_h05','job_h05','tree_gwh','tech_1',daysAgo(14),daysAgo(14),'Gas valve internal failure',58,0,'[]'],
+      // Toilet
+      ['ses_t01','job_t01','tree_toilet','tech_2',daysAgo(50),daysAgo(50),'Flapper chain misadjusted or seat scaled',80,1,'[]'],
+      ['ses_t02','job_t02','tree_toilet','tech_1',daysAgo(41),daysAgo(41),'Fill valve diaphragm seeping past seal',73,1,'[]'],
+      ['ses_t03','job_t03','tree_toilet','tech_2',daysAgo(33),daysAgo(33),'Phantom flush — flapper seal hardened',69,1,'[]'],
+      ['ses_t04','job_t04','tree_toilet','tech_1',daysAgo(22),daysAgo(22),'Mineral scale blocking rim jets',64,0,'[]'],
+      ['ses_t05','job_t05','tree_toilet','tech_2',daysAgo(9),daysAgo(9),'Fill valve diaphragm seeping past seal',73,1,'[]'],
+      // Drain
+      ['ses_d01','job_d01','tree_drain','tech_1',daysAgo(47),daysAgo(47),'Local trap/branch clog, hair or debris buildup',79,1,'[]'],
+      ['ses_d02','job_d02','tree_drain','tech_2',daysAgo(36),daysAgo(36),'Grease/soap buildup in shared branch line',71,1,'[]'],
+      ['ses_d03','job_d03','tree_drain','tech_1',daysAgo(25),daysAgo(25),'Main line obstruction — debris or root intrusion',64,0,'[]'],
+      ['ses_d04','job_d04','tree_drain','tech_2',daysAgo(12),daysAgo(12),'Local trap/branch clog, hair or debris buildup',79,1,'[]'],
+      // Sump
+      ['ses_s01','job_s01','tree_sump','tech_1',daysAgo(52),daysAgo(52),'Float switch mechanically stuck',85,1,'[]'],
+      ['ses_s02','job_s02','tree_sump','tech_2',daysAgo(31),daysAgo(31),'Check valve failure allowing backflow into basin',72,1,'[]'],
+      ['ses_s03','job_s03','tree_sump','tech_1',daysAgo(18),daysAgo(18),'Impeller jammed with debris, or motor bearing seizure',68,0,'[]'],
+      // Pressure
+      ['ses_p01','job_p01','tree_pressure','tech_2',daysAgo(43),daysAgo(43),'Partially closed shutoff or collapsed flexible supply line',76,1,'[]'],
+      ['ses_p02','job_p02','tree_pressure','tech_1',daysAgo(29),daysAgo(29),'PRV failure or interior pipe scaling',66,1,'[]'],
+      ['ses_p03','job_p03','tree_pressure','tech_2',daysAgo(7),daysAgo(7),'Partially closed shutoff or collapsed flexible supply line',76,0,'[]'],
+    ];
+    for (const [id,job_id,tree_id,tech_id,started,completed,diag,conf,sc,path] of sessions) {
+      await sql(
+        `INSERT INTO diagnostic_sessions (id,job_id,tree_id,tech_id,started_at,completed_at,path_json,primary_diagnosis,confidence,safety_critical,status) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,'completed')`,
+        [id,job_id,tree_id,tech_id,started,completed,path,diag,conf,sc]
+      );
+    }
+
+    // Job outcomes
+    type OutcomeRow = [string,string,string,string,string,number];
+    const outcomes: OutcomeRow[] = [
+      ['out_h01','job_h01','ses_h01','tech_1','Thermocouple / pilot assembly failure',1],
+      ['out_h02','job_h02','ses_h02','tech_2','Thermocouple / pilot assembly failure',1],
+      ['out_h03','job_h03','ses_h03','tech_1','Dip tube collapse — cold-water short-circuit',1],
+      ['out_h04','job_h04','ses_h04','tech_2','Scale buildup on heating element',0],
+      ['out_h05','job_h05','ses_h05','tech_1','Thermocouple failure — gas valve intact',0],
+      ['out_t01','job_t01','ses_t01','tech_2','Flapper chain misadjusted or seat scaled',1],
+      ['out_t02','job_t02','ses_t02','tech_1','Fill valve diaphragm seeping past seal',1],
+      ['out_t03','job_t03','ses_t03','tech_2','Phantom flush — flapper seal hardened',1],
+      ['out_t04','job_t04','ses_t04','tech_1','Low tank water level — float set too low',0],
+      ['out_t05','job_t05','ses_t05','tech_2','Fill valve diaphragm seeping past seal',1],
+      ['out_d01','job_d01','ses_d01','tech_1','Local trap/branch clog, hair or debris buildup',1],
+      ['out_d02','job_d02','ses_d02','tech_2','Grease/soap buildup in shared branch line',1],
+      ['out_d03','job_d03','ses_d03','tech_1','Pipe bellying — sag retaining standing water',0],
+      ['out_d04','job_d04','ses_d04','tech_2','Local trap/branch clog, hair or debris buildup',1],
+      ['out_s01','job_s01','ses_s01','tech_1','Float switch mechanically stuck',1],
+      ['out_s02','job_s02','ses_s02','tech_2','Check valve failure allowing backflow into basin',1],
+      ['out_s03','job_s03','ses_s03','tech_1','Capacitor failure — motor intact',0],
+      ['out_p01','job_p01','ses_p01','tech_2','Partially closed shutoff or collapsed flexible supply line',1],
+      ['out_p02','job_p02','ses_p02','tech_1','PRV failure or interior pipe scaling',1],
+      ['out_p03','job_p03','ses_p03','tech_2','Clogged aerator — single fixture only',0],
+    ];
+    for (const [id,job_id,ses_id,tech_id,actual,matched] of outcomes) {
+      await sql(
+        `INSERT INTO job_outcomes (id,job_id,session_id,tech_id,actual_diagnosis,matched,closed_at) VALUES ($1,$2,$3,$4,$5,$6,$7)`,
+        [id,job_id,ses_id,tech_id,actual,matched,daysAgo(0)]
+      );
+    }
+
+    // Second opinions on 2 sessions
+    await sql(`INSERT INTO second_opinions (id,session_id,reviewer_id,requested_at,responded_at,status,reviewer_notes,redirected_diagnosis) VALUES
+      ('so_01','ses_h04','rev_1',$1,$2,'resolved','Concur with scale buildup — anode depletion was secondary. Recommend full flush before replacement.','Scale buildup on heating element')`,
+      [daysAgo(27), daysAgo(26)]);
+    await sql(`INSERT INTO second_opinions (id,session_id,reviewer_id,requested_at,status) VALUES
+      ('so_02','ses_s03','rev_2',$1,'pending')`, [daysAgo(18)]);
+
+    // Deplete some truck stock to trigger low-stock alerts and restock requests
+    await sql(`UPDATE truck_stock SET quantity=1 WHERE truck_id='truck_1' AND part_id IN (SELECT id FROM parts WHERE part_number IN ('THERMO-NAT-24MV','ANODE-MG-44'))`);
+    await sql(`UPDATE truck_stock SET quantity=0 WHERE truck_id='truck_2' AND part_id IN (SELECT id FROM parts WHERE part_number='FLAP-UNIV-3IN')`);
+    await sql(`UPDATE truck_stock SET quantity=1 WHERE truck_id='truck_2' AND part_id IN (SELECT id FROM parts WHERE part_number='FLOAT-SW-UNIV')`);
+
+    // Restock requests from techs
+    await sql(`INSERT INTO restock_requests (id,truck_id,part_id,requested_by,requested_at,status) VALUES
+      ('rst_01','truck_1',(SELECT id FROM parts WHERE part_number='THERMO-NAT-24MV'),'tech_1',$1,'pending')`, [daysAgo(3)]);
+    await sql(`INSERT INTO restock_requests (id,truck_id,part_id,requested_by,requested_at,status) VALUES
+      ('rst_02','truck_2',(SELECT id FROM parts WHERE part_number='FLAP-UNIV-3IN'),'tech_2',$1,'pending')`, [daysAgo(1)]);
+
+    // 2 open (scheduled) jobs for the intake queue
     const today = new Date().toISOString();
-    const cid = rid("cust");
-    await sql(`INSERT INTO customers (id,name,address,phone) VALUES ($1,'James Smith','123 Maple St, Springvale, OH','(614) 555-0101')`, [cid]);
-    await sql(`INSERT INTO jobs (id,customer_id,tech_id,job_type,scheduled_at,status,created_at) VALUES ($1,$2,'tech_1','Gas Water Heater Service',$3,'scheduled',$3)`, [rid("job"), cid, today]);
-    const cid2 = rid("cust");
-    await sql(`INSERT INTO customers (id,name,address,phone) VALUES ($1,'Linda Johnson','456 Oak Ave, Springvale, OH','(614) 555-0202')`, [cid2]);
-    await sql(`INSERT INTO jobs (id,customer_id,tech_id,job_type,scheduled_at,status,created_at) VALUES ($1,$2,'tech_1','Toilet Repair',$3,'scheduled',$3)`, [rid("job"), cid2, today]);
+    await sql(`INSERT INTO jobs (id,customer_id,tech_id,job_type,notes,scheduled_at,status,source,created_at) VALUES ($1,'cust_11',NULL,'Gas Water Heater Service','No hot water since yesterday morning',$2,'scheduled','phone',$2)`,
+      [rid("job"), today]);
+    await sql(`INSERT INTO jobs (id,customer_id,tech_id,job_type,notes,scheduled_at,status,source,created_at) VALUES ($1,'cust_12',NULL,'Drain Backup','Kitchen sink and adjacent bathroom draining very slow',$2,'scheduled','web',$2)`,
+      [rid("job"), today]);
 
     return NextResponse.json({ ok: true, step: "data", message: "Seed data inserted. You can now log in." });
   } catch (e: any) {
