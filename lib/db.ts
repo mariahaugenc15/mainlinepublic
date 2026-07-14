@@ -15,6 +15,10 @@ export const sql: {
   (query: string, params?: any[]): Promise<any[]>;
 } = ((strings: any, ...values: any[]) => {
   const client = getClient();
-  if (typeof strings === "string") return (client as any).query(strings, values[0] ?? []);
+  if (typeof strings === "string") {
+    return Promise.resolve((client as any).query(strings, values[0] ?? [])).then(
+      (r: any) => (Array.isArray(r) ? r : (r.rows ?? r))
+    );
+  }
   return (client as any)(strings, ...values);
 }) as any;
