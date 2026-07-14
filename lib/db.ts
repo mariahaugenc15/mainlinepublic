@@ -2,7 +2,11 @@ import { neon } from "@neondatabase/serverless";
 
 let _client: ReturnType<typeof neon> | null = null;
 function getClient() {
-  if (!_client) _client = neon(process.env.DATABASE_URL!);
+  if (!_client) {
+    const url = process.env.DATABASE_URL ?? process.env.POSTGRES_URL ?? process.env.POSTGRES_URL_NON_POOLING;
+    if (!url) throw new Error("No database URL found. Set DATABASE_URL or POSTGRES_URL.");
+    _client = neon(url);
+  }
   return _client;
 }
 
