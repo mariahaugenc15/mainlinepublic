@@ -1,25 +1,31 @@
-/* Seed script for HauGen. Run with: npx tsx scripts/seed.ts */
+/* Seed script for HauGen. Run with: npx tsx --env-file=.env.development.local scripts/seed.ts */
 import bcrypt from "bcryptjs";
-import { ensureSchema } from "../lib/db";
+import { neon } from "@neondatabase/serverless";
 import { rid } from "../lib/ids";
 
-const db = ensureSchema();
+const sql = neon(process.env.DATABASE_URL ?? "");
 
-function run(sql: string, params: unknown[] = []) {
-  db.prepare(sql).run(...(params as any[]));
+let _counter = 0;
+async function run(query: string, params: unknown[] = []) {
+  // Convert ? placeholders to $1, $2, ...
+  let i = 0;
+  const pg = query.replace(/\?/g, () => `$${++i}`);
+  await sql(pg, params as any[]);
 }
 
-function clearAll() {
+async function main() {
+
+async function clearAll() {
   const tables = [
     "purchase_order_items","purchase_orders","restock_requests","vendor_pricing","vendors",
     "truck_stock","trucks","parts","job_outcomes","second_opinions","photo_analyses",
     "diagnostic_sessions","jobs","diagnostic_nodes","diagnostic_trees","technical_bulletins",
     "manufacturers","defect_codes","vision_defect_categories","equipment","customers","users",
   ];
-  for (const t of tables) db.exec(`DELETE FROM ${t};`);
+  for (const t of tables) await sql(`DELETE FROM ${t}`);
 }
 
-clearAll();
+await clearAll();
 
 // ---------- Users ----------
 const hash = bcrypt.hashSync("password123", 8);
@@ -46,16 +52,16 @@ const reviewers = [
 ];
 
 for (const t of techs) {
-  run(
+  await run(
     `INSERT INTO users (id,email,password_hash,name,role,truck_id) VALUES (?,?,?,?,?,?)`,
     [t.id, t.email, hash, t.name, "TECH", `truck_${t.id.split("_")[1]}`]
   );
 }
 for (const a of admins) {
-  run(`INSERT INTO users (id,email,password_hash,name,role) VALUES (?,?,?,?,?)`, [a.id, a.email, hash, a.name, "ADMIN"]);
+  await run(`INSERT INTO users (id,email,password_hash,name,role) VALUES (?,?,?,?,?)`, [a.id, a.email, hash, a.name, "ADMIN"]);
 }
 for (const r of reviewers) {
-  run(
+  await run(
     `INSERT INTO users (id,email,password_hash,name,role,credential,years_experience) VALUES (?,?,?,?,?,?,?)`,
     [r.id, r.email, hash, r.name, "REVIEWER", r.credential, r.years]
   );
@@ -64,7 +70,7 @@ for (const r of reviewers) {
 // ---------- Trucks ----------
 for (const t of techs) {
   const num = t.id.split("_")[1];
-  run(`INSERT INTO trucks (id,name) VALUES (?,?)`, [`truck_${num}`, `Truck ${num} — ${t.name.split(" ")[0]}`]);
+  await run(`INSERT INTO trucks (id,name) VALUES (?,?)`, [`truck_${num}`, `Truck ${num} — ${t.name.split(" ")[0]}`]);
 }
 
 // ---------- Manufacturers ----------
@@ -74,7 +80,7 @@ const manufacturers = [
   { id: "mfg_vantage", name: "Vantage Plumbing Systems", description: "Drainage, sump, and pressure equipment." },
   { id: "mfg_coreline", name: "Coreline", description: "Pipe, fittings, and supply line hardware." },
 ];
-for (const m of manufacturers) run(`INSERT INTO manufacturers (id,name,description) VALUES (?,?,?)`, [m.id, m.name, m.description]);
+for (const m of manufacturers) await run(`INSERT INTO manufacturers (id,name,description) VALUES (?,?,?)`, [m.id, m.name, m.description]);
 
 // ---------- Defect codes (PACP-style) ----------
 type DefectCode = { id: string; code: string; family: string; description: string; severity: number };
@@ -101,7 +107,7 @@ const defectCodes: DefectCode[] = [
   { id: "dc_20", code: "CF-MA-1", family: "Construction Features", description: "Material change, informational", severity: 1 },
 ];
 for (const d of defectCodes) {
-  run(`INSERT INTO defect_codes (id,code,family,description,severity_grade) VALUES (?,?,?,?,?)`, [d.id, d.code, d.family, d.description, d.severity]);
+  await run(`INSERT INTO defect_codes (id,code,family,description,severity_grade) VALUES (?,?,?,?,?)`, [d.id, d.code, d.family, d.description, d.severity]);
 }
 
 // ---------- Technical bulletins ----------
@@ -131,7 +137,7 @@ const bulletins: Bulletin[] = [
   { id: "bul_20", num: "AF-TB-280", mfg: "mfg_aquaflow", line: "QuietFill Toilet Systems", symptom: "Weak flush, incomplete bowl clearing", cause: "Mineral scale partially blocking rim jets and siphon channel", fix: "Descale rim jets with wire pick and vinegar solution; check for adequate tank water level", models: "QF-200, QF-300", defect: "dc_8" },
 ];
 for (const b of bulletins) {
-  run(
+  await run(
     `INSERT INTO technical_bulletins (id,bulletin_number,manufacturer_id,product_line,symptom,root_cause,recommended_fix,applicable_models,defect_code_id) VALUES (?,?,?,?,?,?,?,?,?)`,
     [b.id, b.num, b.mfg, b.line, b.symptom, b.cause, b.fix, b.models, b.defect ?? null]
   );
@@ -160,9 +166,10 @@ const visionCategories = [
   ["Valve Seat Wear", "Visible wear pattern on a valve sealing surface"],
   ["Active Drip", "Visible water droplet formation indicating live leak"],
 ];
-visionCategories.forEach(([name, desc], i) => {
-  run(`INSERT INTO vision_defect_categories (id,name,description) VALUES (?,?,?)`, [`vdc_${i + 1}`, name, desc]);
-});
+for (let i = 0; i < visionCategories.length; i++) {
+  const [name, desc] = visionCategories[i];
+  await run(`INSERT INTO vision_defect_categories (id,name,description) VALUES (?,?,?)`, [`vdc_${i + 1}`, name, desc]);
+}
 
 // ---------- Diagnostic trees ----------
 type NodeDef = {
@@ -183,14 +190,14 @@ type NodeDef = {
   children?: { optionValue: string; node: NodeDef }[];
 };
 
-function insertTree(treeId: string, name: string, equipmentType: string, description: string, root: NodeDef) {
-  run(`INSERT INTO diagnostic_trees (id,name,equipment_type,description) VALUES (?,?,?,?)`, [treeId, name, equipmentType, description]);
+async function insertTree(treeId: string, name: string, equipmentType: string, description: string, root: NodeDef) {
+  await run(`INSERT INTO diagnostic_trees (id,name,equipment_type,description) VALUES (?,?,?,?)`, [treeId, name, equipmentType, description]);
 
   let order = 0;
-  function insertNode(node: NodeDef, parentId: string | null, parentOptionValue: string | null) {
+  async function insertNode(node: NodeDef, parentId: string | null, parentOptionValue: string | null) {
     const nodeId = rid("node");
     order += 1;
-    run(
+    await run(
       `INSERT INTO diagnostic_nodes (id,tree_id,parent_node_id,parent_option_value,node_type,prompt_text,options_json,result_json,bulletin_id,sort_order) VALUES (?,?,?,?,?,?,?,?,?,?)`,
       [
         nodeId,
@@ -206,10 +213,10 @@ function insertTree(treeId: string, name: string, equipmentType: string, descrip
       ]
     );
     for (const child of node.children ?? []) {
-      insertNode(child.node, nodeId, child.optionValue);
+      await insertNode(child.node, nodeId, child.optionValue);
     }
   }
-  insertNode(root, null, null);
+  await insertNode(root, null, null);
 }
 
 // Tree 1: Gas water heater — no hot water (deep tree)
@@ -583,7 +590,7 @@ const ghwRoot: NodeDef = {
     },
   ],
 };
-insertTree("tree_gwh", "Gas Water Heater — No Hot Water", "Gas Water Heater", "Branching diagnostic for gas water heater hot water complaints, from pilot/ignition through tank failure.", ghwRoot);
+await insertTree("tree_gwh", "Gas Water Heater — No Hot Water", "Gas Water Heater", "Branching diagnostic for gas water heater hot water complaints, from pilot/ignition through tank failure.", ghwRoot);
 
 // Tree 2: Toilet running
 const toiletRoot: NodeDef = {
@@ -684,7 +691,7 @@ const toiletRoot: NodeDef = {
     },
   ],
 };
-insertTree("tree_toilet", "Toilet Running", "Toilet", "Branching diagnostic for running or phantom-flushing toilets.", toiletRoot);
+await insertTree("tree_toilet", "Toilet Running", "Toilet", "Branching diagnostic for running or phantom-flushing toilets.", toiletRoot);
 
 // Tree 3: Drain clog
 const drainRoot: NodeDef = {
@@ -824,7 +831,7 @@ const drainRoot: NodeDef = {
     },
   ],
 };
-insertTree("tree_drain", "Drain Clog", "Drain Line", "Branching diagnostic for single-fixture through whole-house drain obstructions.", drainRoot);
+await insertTree("tree_drain", "Drain Clog", "Drain Line", "Branching diagnostic for single-fixture through whole-house drain obstructions.", drainRoot);
 
 // Tree 4: Water pressure issues
 const pressureRoot: NodeDef = {
@@ -906,7 +913,7 @@ const pressureRoot: NodeDef = {
     },
   ],
 };
-insertTree("tree_pressure", "Water Pressure Issues", "Water Supply System", "Branching diagnostic for low or high water pressure complaints.", pressureRoot);
+await insertTree("tree_pressure", "Water Pressure Issues", "Water Supply System", "Branching diagnostic for low or high water pressure complaints.", pressureRoot);
 
 // Tree 5: Sump pump failure
 const sumpRoot: NodeDef = {
@@ -1016,7 +1023,7 @@ const sumpRoot: NodeDef = {
     },
   ],
 };
-insertTree("tree_sump", "Sump Pump Failure", "Sump Pump", "Branching diagnostic for sump pump activation and performance failures.", sumpRoot);
+await insertTree("tree_sump", "Sump Pump Failure", "Sump Pump", "Branching diagnostic for sump pump activation and performance failures.", sumpRoot);
 
 console.log("Trees, bulletins, defect codes, and vision categories seeded.");
 
@@ -1054,7 +1061,7 @@ const partsCatalog: PartDef[] = [
   { num: "ANGLE-STOP-VALVE", name: "Angle Stop Valve", category: "Supply", cost: 8.5, threshold: 5 },
 ];
 for (const p of partsCatalog) {
-  run(`INSERT INTO parts (id,part_number,name,category,unit_cost,default_threshold) VALUES (?,?,?,?,?,?)`, [`part_${p.num}`, p.num, p.name, p.category, p.cost, p.threshold]);
+  await run(`INSERT INTO parts (id,part_number,name,category,unit_cost,default_threshold) VALUES (?,?,?,?,?,?)`, [`part_${p.num}`, p.num, p.name, p.category, p.cost, p.threshold]);
 }
 
 // ---------- Truck stock ----------
@@ -1070,7 +1077,7 @@ for (const t of techs) {
     const lowBias = (truckId === "truck_1" && ["TC-UNIV-18", "FLAP-UNIV-3IN"].includes(p.num)) ||
       (truckId === "truck_2" && ["TC-UNIV-18"].includes(p.num));
     const qty = lowBias ? rand(0, Math.max(0, p.threshold - 2)) : rand(Math.max(0, p.threshold - 1), p.threshold + 6);
-    run(`INSERT INTO truck_stock (id,truck_id,part_id,quantity,threshold) VALUES (?,?,?,?,?)`, [rid("stock"), truckId, `part_${p.num}`, qty, p.threshold]);
+    await run(`INSERT INTO truck_stock (id,truck_id,part_id,quantity,threshold) VALUES (?,?,?,?,?)`, [rid("stock"), truckId, `part_${p.num}`, qty, p.threshold]);
   }
 }
 
@@ -1080,13 +1087,13 @@ const vendors = [
   { id: "vendor_2", name: "Ferro Trade Distributors", contact: "Maya Lin", email: "maya.lin@ferrotrade.demo", lead: 4 },
   { id: "vendor_3", name: "Bluepoint Wholesale Plumbing", contact: "Order Desk", email: "orders@bluepointwholesale.demo", lead: 3 },
 ];
-for (const v of vendors) run(`INSERT INTO vendors (id,name,contact_name,contact_email,lead_time_days) VALUES (?,?,?,?,?)`, [v.id, v.name, v.contact, v.email, v.lead]);
+for (const v of vendors) await run(`INSERT INTO vendors (id,name,contact_name,contact_email,lead_time_days) VALUES (?,?,?,?,?)`, [v.id, v.name, v.contact, v.email, v.lead]);
 
 for (const p of partsCatalog) {
   if (p.cost === 0) continue;
   for (const v of vendors) {
     const variance = 1 + (rand(-8, 12) / 100);
-    run(`INSERT INTO vendor_pricing (id,vendor_id,part_id,price) VALUES (?,?,?,?)`, [rid("vp"), v.id, `part_${p.num}`, Math.round(p.cost * variance * 100) / 100]);
+    await run(`INSERT INTO vendor_pricing (id,vendor_id,part_id,price) VALUES (?,?,?,?)`, [rid("vp"), v.id, `part_${p.num}`, Math.round(p.cost * variance * 100) / 100]);
   }
 }
 
@@ -1118,10 +1125,10 @@ const customerEquip: Record<string, string> = {};
 for (let i = 0; i < customerCount; i++) {
   const cid = rid("cust");
   customerIds.push(cid);
-  run(`INSERT INTO customers (id,name,address,phone) VALUES (?,?,?,?)`, [cid, randomCustomerName(), randomAddress(), `(614) ${rand(200, 999)}-${rand(1000, 9999)}`]);
+  await run(`INSERT INTO customers (id,name,address,phone) VALUES (?,?,?,?)`, [cid, randomCustomerName(), randomAddress(), `(614) ${rand(200, 999)}-${rand(1000, 9999)}`]);
   const et = equipmentTypes[rand(0, equipmentTypes.length - 1)];
   const eid = rid("equip");
-  run(`INSERT INTO equipment (id,customer_id,type,make,model,install_year) VALUES (?,?,?,?,?,?)`, [
+  await run(`INSERT INTO equipment (id,customer_id,type,make,model,install_year) VALUES (?,?,?,?,?,?)`, [
     eid, cid, et.type, et.makes[0], et.models[rand(0, et.models.length - 1)], 2026 - rand(1, 18),
   ]);
   customerEquip[cid] = eid;
@@ -1132,8 +1139,8 @@ console.log("Customers and equipment seeded.");
 // ---------- Tree node lookup for session generation ----------
 type TreeResultPath = { treeId: string; jobType: string; resultNode: any; pathLabels: string[] };
 
-function collectResultPaths(treeId: string): TreeResultPath[] {
-  const nodes = db.prepare(`SELECT * FROM diagnostic_nodes WHERE tree_id = ?`).all(treeId) as any[];
+async function collectResultPaths(treeId: string): Promise<TreeResultPath[]> {
+  const nodes = await sql(`SELECT * FROM diagnostic_nodes WHERE tree_id = $1`, [treeId]) as any[];
   const byParent: Record<string, any[]> = {};
   for (const n of nodes) {
     const key = n.parent_node_id ?? "root";
@@ -1164,7 +1171,7 @@ const treeJobTypes: Record<string, string> = {
 
 const allResultPaths: TreeResultPath[] = [];
 for (const treeId of Object.keys(treeJobTypes)) {
-  const paths = collectResultPaths(treeId).map((p) => ({ ...p, jobType: treeJobTypes[treeId] }));
+  const paths = (await collectResultPaths(treeId)).map((p) => ({ ...p, jobType: treeJobTypes[treeId] }));
   allResultPaths.push(...paths);
 }
 
@@ -1196,7 +1203,7 @@ for (let i = 0; i < totalJobs; i++) {
   const scheduledAt = randomDateInRange();
   const jobId = rid("job");
 
-  run(`INSERT INTO jobs (id,customer_id,equipment_id,tech_id,job_type,scheduled_at,status,created_at) VALUES (?,?,?,?,?,?,?,?)`, [
+  await run(`INSERT INTO jobs (id,customer_id,equipment_id,tech_id,job_type,scheduled_at,status,created_at) VALUES (?,?,?,?,?,?,?,?)`, [
     jobId, cid, eid, tech.id, path.jobType, scheduledAt.toISOString(), "closed", scheduledAt.toISOString(),
   ]);
 
@@ -1210,7 +1217,7 @@ for (let i = 0; i < totalJobs; i++) {
   const startedAt = new Date(scheduledAt.getTime() + rand(5, 40) * 60000);
   const completedAt = new Date(startedAt.getTime() + (path.resultNode.estRepairTimeMinutes ?? 45) * 60000 + rand(5, 25) * 60000);
 
-  run(
+  await run(
     `INSERT INTO diagnostic_sessions (id,job_id,tree_id,tech_id,started_at,completed_at,path_json,primary_diagnosis,confidence,secondary_diagnoses_json,parts_recommended_json,est_repair_time_minutes,safety_critical,second_opinion_requested,status) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
     [
       sessionId, jobId, path.treeId, tech.id, startedAt.toISOString(), completedAt.toISOString(), JSON.stringify(path.pathLabels),
@@ -1228,7 +1235,7 @@ for (let i = 0; i < totalJobs; i++) {
     const respondedAt = new Date(requestedAt.getTime() + rand(8, 50) * 60000);
     const soStatus = matched || Math.random() < 0.8 ? "confirmed" : "redirected";
     if (soStatus === "redirected") matched = false;
-    run(
+    await run(
       `INSERT INTO second_opinions (id,session_id,reviewer_id,requested_at,responded_at,status,reviewer_notes,redirected_diagnosis) VALUES (?,?,?,?,?,?,?,?)`,
       [
         rid("so"), sessionId, reviewer.id, requestedAt.toISOString(), respondedAt.toISOString(), soStatus,
@@ -1240,7 +1247,7 @@ for (let i = 0; i < totalJobs; i++) {
 
   const actualDiagnosis = matched ? path.resultNode.primaryDiagnosis : (path.resultNode.secondaryDiagnoses[0]?.name ?? "Unspecified — diagnosis revised in field");
 
-  run(
+  await run(
     `INSERT INTO job_outcomes (id,job_id,session_id,tech_id,actual_diagnosis,matched,parts_used_json,closed_at) VALUES (?,?,?,?,?,?,?,?)`,
     [rid("outcome"), jobId, sessionId, tech.id, actualDiagnosis, matched ? 1 : 0, JSON.stringify(path.resultNode.parts), completedAt.toISOString()]
   );
@@ -1257,10 +1264,13 @@ for (let i = 0; i < 10; i++) {
   const path = allResultPaths[rand(0, allResultPaths.length - 1)];
   const jobId = rid("job");
   const scheduledAt = new Date(today.getTime() + rand(0, 9) * 3600_000);
-  run(`INSERT INTO jobs (id,customer_id,equipment_id,tech_id,job_type,scheduled_at,status,created_at) VALUES (?,?,?,?,?,?,?,?)`, [
+  await run(`INSERT INTO jobs (id,customer_id,equipment_id,tech_id,job_type,scheduled_at,status,created_at) VALUES (?,?,?,?,?,?,?,?)`, [
     jobId, cid, eid, tech.id, path.jobType, scheduledAt.toISOString(), i < 2 ? "in_progress" : "scheduled", today.toISOString(),
   ]);
 }
 
 console.log("Seeded today's live job queue.");
 console.log("Seed complete.");
+} // end main
+
+main().catch((e) => { console.error(e); process.exit(1); });

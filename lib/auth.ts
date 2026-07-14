@@ -1,7 +1,7 @@
 import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
 import bcrypt from "bcryptjs";
-import { ensureSchema } from "./db";
+import { sql } from "./db";
 
 const SECRET = new TextEncoder().encode("diagnosticos-demo-secret-key-do-not-use-in-prod");
 const COOKIE_NAME = "diagnosticos_session";
@@ -18,18 +18,18 @@ export type SessionUser = {
   truckId: string | null;
 };
 
-export function getUserByEmail(email: string) {
-  const db = ensureSchema();
-  return db.prepare(`SELECT * FROM users WHERE email = ?`).get(email) as any;
+async function getUserByEmail(email: string) {
+  const rows = await sql`SELECT * FROM users WHERE email = ${email}`;
+  return (rows[0] ?? null) as any;
 }
 
-export function getUserById(id: string) {
-  const db = ensureSchema();
-  return db.prepare(`SELECT * FROM users WHERE id = ?`).get(id) as any;
+async function getUserById(id: string) {
+  const rows = await sql`SELECT * FROM users WHERE id = ${id}`;
+  return (rows[0] ?? null) as any;
 }
 
 export async function verifyPassword(email: string, password: string): Promise<SessionUser | null> {
-  const user = getUserByEmail(email);
+  const user = await getUserByEmail(email);
   if (!user) return null;
   const ok = bcrypt.compareSync(password, user.password_hash);
   if (!ok) return null;
@@ -69,7 +69,7 @@ export async function getSession(): Promise<SessionUser | null> {
   if (!token) return null;
   try {
     const { payload } = await jwtVerify(token, SECRET);
-    const user = getUserById(payload.uid as string);
+    const user = await getUserById(payload.uid as string);
     if (!user) return null;
     return toSessionUser(user);
   } catch {
