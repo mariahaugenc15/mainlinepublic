@@ -17,12 +17,20 @@ export default async function ProcurementPage({
 }) {
   await requireRole("ADMIN");
   const { ordered, fulfilled } = await searchParams;
-  const lowStock = listLowStock();
-  const pendingRequests = listPendingRestockRequests();
-  const suggestions = getReorderSuggestions();
-  const vendors = listVendors();
-  const purchaseOrders = listPurchaseOrders();
-  const allStock = listAllTruckStock();
+  const [lowStock, pendingRequests, rawSuggestions, vendors, purchaseOrders, allStock] = await Promise.all([
+    listLowStock(),
+    listPendingRestockRequests(),
+    getReorderSuggestions(),
+    listVendors(),
+    listPurchaseOrders(),
+    listAllTruckStock(),
+  ]);
+  const suggestions = await Promise.all(
+    rawSuggestions.map(async (s: any) => ({
+      ...s,
+      partVendors: await listVendorsForPart(s.part_id),
+    }))
+  );
 
   return (
     <div>
@@ -49,7 +57,7 @@ export default async function ProcurementPage({
         </p>
         <div className="flex flex-col gap-3">
           {suggestions.map((s: any) => {
-            const partVendors = listVendorsForPart(s.part_id);
+            const partVendors = s.partVendors;
             const cheapest = partVendors[0];
             return (
               <div key={s.part_id} className="flex flex-col gap-2 rounded-lg border border-sand-200 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">

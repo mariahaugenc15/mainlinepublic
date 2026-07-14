@@ -19,11 +19,13 @@ export default async function AdminOverviewPage({
 }) {
   await requireRole("ADMIN");
   const { regionalRefresh } = await searchParams;
-  const stats = getOverviewStats();
-  const trend = getAccuracyTrend();
-  const regional = getRegionalWaterSummary();
-  const regionalSystems = listRegionalWaterSystems();
-  const lastRun = getLatestIngestionRun();
+  const [stats, trend, regional, regionalSystems, lastRun] = await Promise.all([
+    getOverviewStats(),
+    getAccuracyTrend(),
+    getRegionalWaterSummary(),
+    listRegionalWaterSystems(),
+    getLatestIngestionRun(),
+  ]);
 
   const recent = trend.slice(-14);
   const maxTotal = Math.max(1, ...recent.map((d) => d.total));

@@ -11,8 +11,7 @@ function toLocalInputValue(iso: string) {
 export default async function IntakeQueuePage({ searchParams }: { searchParams: Promise<{ assigned?: string }> }) {
   await requireRole("ADMIN");
   const { assigned } = await searchParams;
-  const jobs = listUnassignedJobs();
-  const techs = listAllTechs();
+  const [jobs, techs] = await Promise.all([listUnassignedJobs(), listAllTechs()]);
 
   return (
     <div>

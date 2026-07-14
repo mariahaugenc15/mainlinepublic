@@ -3,7 +3,7 @@ import { getTechPerformance } from "@/lib/data";
 
 export default async function TechniciansPage() {
   await requireRole("ADMIN");
-  const techs = getTechPerformance();
+  const techs = await getTechPerformance();
 
   return (
     <div>

@@ -3,7 +3,7 @@ import { listReviewers } from "@/lib/data";
 
 export default async function ReviewBoardPage() {
   await requireRole("ADMIN");
-  const reviewers = listReviewers();
+  const reviewers = await listReviewers();
 
   return (
     <div>

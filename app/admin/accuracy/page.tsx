@@ -8,8 +8,10 @@ export default async function AccuracyPage({
 }) {
   await requireRole("ADMIN");
   const filters = await searchParams;
-  const sessions = listClosedSessions(filters);
-  const techs = listTechsForFilter();
+  const [sessions, techs] = await Promise.all([
+    listClosedSessions(filters),
+    listTechsForFilter(),
+  ]);
 
   return (
     <div>

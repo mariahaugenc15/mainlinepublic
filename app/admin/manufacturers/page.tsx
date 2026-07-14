@@ -4,9 +4,9 @@ import { listManufacturers, listBulletinsForManufacturer } from "@/lib/data";
 export default async function ManufacturersPage({ searchParams }: { searchParams: Promise<{ m?: string }> }) {
   await requireRole("ADMIN");
   const { m } = await searchParams;
-  const manufacturers = listManufacturers();
+  const manufacturers = await listManufacturers();
   const selected = m ? manufacturers.find((mfr: any) => mfr.id === m) : manufacturers[0];
-  const bulletins = selected ? listBulletinsForManufacturer(selected.id) : [];
+  const bulletins = selected ? await listBulletinsForManufacturer(selected.id) : [];
 
   return (
     <div>

@@ -5,8 +5,8 @@ import { requestRestockAction } from "@/app/tech/actions";
 export default async function TruckStockPage({ searchParams }: { searchParams: Promise<{ requested?: string }> }) {
   const user = await requireRole("TECH");
   const { requested } = await searchParams;
-  const truck = getTruckForTech(user.id);
-  const stock = truck?.truck_id ? getTruckStock(truck.truck_id) : [];
+  const truck = await getTruckForTech(user.id);
+  const stock = truck?.truck_id ? await getTruckStock(truck.truck_id) : [];
 
   const byCategory = new Map<string, typeof stock>();
   for (const s of stock) {

@@ -1,9 +1,7 @@
-import { ensureSchema } from "@/lib/db";
+import { sql } from "@/lib/db";
 import { rid } from "@/lib/ids";
 import fs from "node:fs";
 import path from "node:path";
-
-const db = () => ensureSchema();
 
 const EFSERVICE_BASE = "https://data.epa.gov/efservice";
 const EFSERVICE_ROW_CAP = 10000;
@@ -207,72 +205,72 @@ export function pullBulkCsvData(systemsCsvPath: string, violationsCsvPath: strin
 
 // ---------- Shared upsert + run logging ----------
 
-export function upsertRegionalRecords(records: RegionalRecord[], source: "live_api" | "bulk_csv") {
-  const stmt = db().prepare(
-    `INSERT INTO regional_water_data
-       (pwsid, pws_name, pws_type, city, county, state, zip_code,
-        violation_count_total, violation_count_mcl, violation_count_mrdl, violation_count_tt,
-        violation_count_monitoring, violation_count_resolved, violation_count_unresolved,
-        most_recent_violation_date, source, updated_at)
-     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?, datetime('now'))
-     ON CONFLICT(pwsid) DO UPDATE SET
-       pws_name = excluded.pws_name,
-       pws_type = excluded.pws_type,
-       city = excluded.city,
-       county = excluded.county,
-       state = excluded.state,
-       zip_code = excluded.zip_code,
-       violation_count_total = excluded.violation_count_total,
-       violation_count_mcl = excluded.violation_count_mcl,
-       violation_count_mrdl = excluded.violation_count_mrdl,
-       violation_count_tt = excluded.violation_count_tt,
-       violation_count_monitoring = excluded.violation_count_monitoring,
-       violation_count_resolved = excluded.violation_count_resolved,
-       violation_count_unresolved = excluded.violation_count_unresolved,
-       most_recent_violation_date = excluded.most_recent_violation_date,
-       source = excluded.source,
-       updated_at = datetime('now')`
-  );
+export async function upsertRegionalRecords(records: RegionalRecord[], source: "live_api" | "bulk_csv") {
+  const now = new Date().toISOString();
   for (const r of records) {
-    stmt.run(
-      r.pwsid, r.pwsName, r.pwsType, r.city, r.county, r.state, r.zipCode,
-      r.violationCountTotal, r.violationCountMcl, r.violationCountMrdl, r.violationCountTt,
-      r.violationCountMonitoring, r.violationCountResolved, r.violationCountUnresolved,
-      r.mostRecentViolationDate, source
-    );
+    await sql`
+      INSERT INTO regional_water_data
+        (pwsid, pws_name, pws_type, city, county, state, zip_code,
+         violation_count_total, violation_count_mcl, violation_count_mrdl, violation_count_tt,
+         violation_count_monitoring, violation_count_resolved, violation_count_unresolved,
+         most_recent_violation_date, source, updated_at)
+      VALUES (${r.pwsid}, ${r.pwsName}, ${r.pwsType}, ${r.city}, ${r.county}, ${r.state}, ${r.zipCode},
+              ${r.violationCountTotal}, ${r.violationCountMcl}, ${r.violationCountMrdl}, ${r.violationCountTt},
+              ${r.violationCountMonitoring}, ${r.violationCountResolved}, ${r.violationCountUnresolved},
+              ${r.mostRecentViolationDate}, ${source}, ${now})
+      ON CONFLICT (pwsid) DO UPDATE SET
+        pws_name = EXCLUDED.pws_name,
+        pws_type = EXCLUDED.pws_type,
+        city = EXCLUDED.city,
+        county = EXCLUDED.county,
+        state = EXCLUDED.state,
+        zip_code = EXCLUDED.zip_code,
+        violation_count_total = EXCLUDED.violation_count_total,
+        violation_count_mcl = EXCLUDED.violation_count_mcl,
+        violation_count_mrdl = EXCLUDED.violation_count_mrdl,
+        violation_count_tt = EXCLUDED.violation_count_tt,
+        violation_count_monitoring = EXCLUDED.violation_count_monitoring,
+        violation_count_resolved = EXCLUDED.violation_count_resolved,
+        violation_count_unresolved = EXCLUDED.violation_count_unresolved,
+        most_recent_violation_date = EXCLUDED.most_recent_violation_date,
+        source = EXCLUDED.source,
+        updated_at = EXCLUDED.updated_at
+    `;
   }
 }
 
-function startRun(source: "live_api" | "bulk_csv", states: string[]) {
+async function startRun(source: "live_api" | "bulk_csv", states: string[]) {
   const id = rid("ingest");
-  db()
-    .prepare(`INSERT INTO ingestion_runs (id, source, states, status) VALUES (?,?,?,'running')`)
-    .run(id, source, states.join(","));
+  await sql`INSERT INTO ingestion_runs (id, source, states, status) VALUES (${id}, ${source}, ${states.join(",")}, 'running')`;
   return id;
 }
 
-function finishRun(id: string, rowsPulled: number, rowsUpserted: number, status: "success" | "partial" | "failed", error?: string) {
-  db()
-    .prepare(
-      `UPDATE ingestion_runs SET finished_at = datetime('now'), rows_pulled = ?, rows_upserted = ?, status = ?, error_message = ? WHERE id = ?`
-    )
-    .run(rowsPulled, rowsUpserted, status, error ?? null, id);
+async function finishRun(id: string, rowsPulled: number, rowsUpserted: number, status: "success" | "partial" | "failed", error?: string) {
+  await sql`
+    UPDATE ingestion_runs SET
+      finished_at = ${new Date().toISOString()},
+      rows_pulled = ${rowsPulled},
+      rows_upserted = ${rowsUpserted},
+      status = ${status},
+      error_message = ${error ?? null}
+    WHERE id = ${id}
+  `;
 }
 
 /** Runs a live ingestion for the given states (defaults to Michigan, our pilot geography), logging the run. */
 export async function runLiveIngestion(states: string[] = ["MI"]) {
-  const runId = startRun("live_api", states);
+  const runId = await startRun("live_api", states);
   let rowsPulled = 0;
   try {
     for (const state of states) {
       const records = await pullLiveStateData(state);
       rowsPulled += records.length;
-      upsertRegionalRecords(records, "live_api");
+      await upsertRegionalRecords(records, "live_api");
     }
-    finishRun(runId, rowsPulled, rowsPulled, "success");
+    await finishRun(runId, rowsPulled, rowsPulled, "success");
     return { runId, rowsPulled, status: "success" as const };
   } catch (err: any) {
-    finishRun(runId, rowsPulled, rowsPulled, "failed", String(err?.message ?? err));
+    await finishRun(runId, rowsPulled, rowsPulled, "failed", String(err?.message ?? err));
     return { runId, rowsPulled, status: "failed" as const, error: String(err?.message ?? err) };
   }
 }
@@ -280,19 +278,19 @@ export async function runLiveIngestion(states: string[] = ["MI"]) {
 const DEFAULT_BULK_DIR = path.join(process.cwd(), "data", "bulk_samples");
 
 /** Runs ingestion from locally-stored bulk CSV exports — used as an offline-safe fallback for demos. */
-export function runBulkCsvIngestion(
+export async function runBulkCsvIngestion(
   systemsCsvPath: string = path.join(DEFAULT_BULK_DIR, "mi_water_systems.csv"),
   violationsCsvPath: string = path.join(DEFAULT_BULK_DIR, "mi_violations.csv")
 ) {
   const states = ["MI"];
-  const runId = startRun("bulk_csv", states);
+  const runId = await startRun("bulk_csv", states);
   try {
     const records = pullBulkCsvData(systemsCsvPath, violationsCsvPath);
-    upsertRegionalRecords(records, "bulk_csv");
-    finishRun(runId, records.length, records.length, "success");
+    await upsertRegionalRecords(records, "bulk_csv");
+    await finishRun(runId, records.length, records.length, "success");
     return { runId, rowsPulled: records.length, status: "success" as const };
   } catch (err: any) {
-    finishRun(runId, 0, 0, "failed", String(err?.message ?? err));
+    await finishRun(runId, 0, 0, "failed", String(err?.message ?? err));
     return { runId, rowsPulled: 0, status: "failed" as const, error: String(err?.message ?? err) };
   }
 }

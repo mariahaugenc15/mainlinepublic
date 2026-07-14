@@ -1,4 +1,4 @@
--- DiagnosticOS schema (SQLite)
+-- DiagnosticOS schema (Postgres / Neon)
 
 CREATE TABLE IF NOT EXISTS users (
   id TEXT PRIMARY KEY,
@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS users (
   years_experience INTEGER,
   truck_id TEXT,
   hourly_rate REAL,
-  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  created_at TEXT NOT NULL DEFAULT (NOW()::TEXT)
 );
 
 CREATE TABLE IF NOT EXISTS customers (
@@ -21,7 +21,7 @@ CREATE TABLE IF NOT EXISTS customers (
   phone TEXT,
   email TEXT,
   lead_source TEXT,
-  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  created_at TEXT NOT NULL DEFAULT (NOW()::TEXT)
 );
 
 CREATE TABLE IF NOT EXISTS equipment (
@@ -101,7 +101,7 @@ CREATE TABLE IF NOT EXISTS jobs (
   scheduled_at TEXT NOT NULL,
   status TEXT NOT NULL CHECK (status IN ('scheduled','in_progress','closed','cancelled')) DEFAULT 'scheduled',
   source TEXT NOT NULL DEFAULT 'admin' CHECK (source IN ('admin','tech','public_intake')),
-  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  created_at TEXT NOT NULL DEFAULT (NOW()::TEXT)
 );
 
 CREATE TABLE IF NOT EXISTS diagnostic_sessions (
@@ -128,14 +128,14 @@ CREATE TABLE IF NOT EXISTS photo_analyses (
   node_id TEXT REFERENCES diagnostic_nodes(id),
   category_id TEXT REFERENCES vision_defect_categories(id),
   confidence REAL NOT NULL,
-  captured_at TEXT NOT NULL DEFAULT (datetime('now'))
+  captured_at TEXT NOT NULL DEFAULT (NOW()::TEXT)
 );
 
 CREATE TABLE IF NOT EXISTS second_opinions (
   id TEXT PRIMARY KEY,
   session_id TEXT NOT NULL REFERENCES diagnostic_sessions(id),
   reviewer_id TEXT NOT NULL REFERENCES users(id),
-  requested_at TEXT NOT NULL DEFAULT (datetime('now')),
+  requested_at TEXT NOT NULL DEFAULT (NOW()::TEXT),
   responded_at TEXT,
   status TEXT NOT NULL CHECK (status IN ('pending','confirmed','redirected')) DEFAULT 'pending',
   reviewer_notes TEXT,
@@ -150,7 +150,7 @@ CREATE TABLE IF NOT EXISTS job_outcomes (
   actual_diagnosis TEXT NOT NULL,
   matched INTEGER NOT NULL,
   parts_used_json TEXT,
-  closed_at TEXT NOT NULL DEFAULT (datetime('now'))
+  closed_at TEXT NOT NULL DEFAULT (NOW()::TEXT)
 );
 
 CREATE TABLE IF NOT EXISTS parts (
@@ -192,7 +192,7 @@ CREATE TABLE IF NOT EXISTS purchase_orders (
   vendor_id TEXT NOT NULL REFERENCES vendors(id),
   status TEXT NOT NULL CHECK (status IN ('draft','submitted','received')) DEFAULT 'draft',
   created_by TEXT NOT NULL REFERENCES users(id),
-  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  created_at TEXT NOT NULL DEFAULT (NOW()::TEXT),
   total_cost REAL NOT NULL DEFAULT 0
 );
 
@@ -209,7 +209,7 @@ CREATE TABLE IF NOT EXISTS restock_requests (
   truck_id TEXT NOT NULL REFERENCES trucks(id),
   part_id TEXT NOT NULL REFERENCES parts(id),
   requested_by TEXT NOT NULL REFERENCES users(id),
-  requested_at TEXT NOT NULL DEFAULT (datetime('now')),
+  requested_at TEXT NOT NULL DEFAULT (NOW()::TEXT),
   status TEXT NOT NULL CHECK (status IN ('pending','fulfilled')) DEFAULT 'pending'
 );
 
@@ -231,7 +231,7 @@ CREATE TABLE IF NOT EXISTS regional_water_data (
   violation_count_unresolved INTEGER NOT NULL DEFAULT 0,
   most_recent_violation_date TEXT,
   source TEXT NOT NULL DEFAULT 'live_api' CHECK (source IN ('live_api','bulk_csv')),
-  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+  updated_at TEXT NOT NULL DEFAULT (NOW()::TEXT)
 );
 
 CREATE INDEX IF NOT EXISTS idx_regional_water_county ON regional_water_data(state, county);
@@ -241,7 +241,7 @@ CREATE TABLE IF NOT EXISTS ingestion_runs (
   id TEXT PRIMARY KEY,
   source TEXT NOT NULL CHECK (source IN ('live_api','bulk_csv')),
   states TEXT,
-  started_at TEXT NOT NULL DEFAULT (datetime('now')),
+  started_at TEXT NOT NULL DEFAULT (NOW()::TEXT),
   finished_at TEXT,
   rows_pulled INTEGER NOT NULL DEFAULT 0,
   rows_upserted INTEGER NOT NULL DEFAULT 0,
@@ -262,16 +262,16 @@ CREATE TABLE IF NOT EXISTS company_settings (
   insurance_carrier TEXT NOT NULL DEFAULT '',
   service_area TEXT NOT NULL DEFAULT '',
   default_markup_pct REAL NOT NULL DEFAULT 20,
-  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+  updated_at TEXT NOT NULL DEFAULT (NOW()::TEXT)
 );
-INSERT OR IGNORE INTO company_settings (id, default_markup_pct) VALUES ('singleton', 20);
+INSERT INTO company_settings (id, default_markup_pct) VALUES ('singleton', 20) ON CONFLICT (id) DO NOTHING;
 
 CREATE TABLE IF NOT EXISTS estimates (
   id TEXT PRIMARY KEY,
   job_id TEXT NOT NULL REFERENCES jobs(id),
   session_id TEXT REFERENCES diagnostic_sessions(id),
   created_by TEXT NOT NULL REFERENCES users(id),
-  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  created_at TEXT NOT NULL DEFAULT (NOW()::TEXT),
   parts_json TEXT NOT NULL DEFAULT '[]',
   parts_cost REAL NOT NULL DEFAULT 0,
   labor_hours REAL NOT NULL DEFAULT 0,

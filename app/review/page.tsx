@@ -5,8 +5,10 @@ import { respondToCaseAction } from "@/app/review/actions";
 export default async function ReviewQueuePage({ searchParams }: { searchParams: Promise<{ responded?: string }> }) {
   const user = await requireRole("REVIEWER");
   const { responded } = await searchParams;
-  const pending = listPendingReviewsForReviewer(user.id);
-  const history = listReviewHistoryForReviewer(user.id);
+  const [pending, history] = await Promise.all([
+    listPendingReviewsForReviewer(user.id),
+    listReviewHistoryForReviewer(user.id),
+  ]);
 
   return (
     <div>

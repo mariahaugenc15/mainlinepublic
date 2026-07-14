@@ -9,7 +9,7 @@ function formatTime(iso: string) {
 export default async function TechJobQueue({ searchParams }: { searchParams: Promise<{ closed?: string }> }) {
   const user = await requireRole("TECH");
   const { closed } = await searchParams;
-  const jobs = listJobsForTech(user.id);
+  const jobs = await listJobsForTech(user.id);
 
   return (
     <div className="mx-auto max-w-lg">

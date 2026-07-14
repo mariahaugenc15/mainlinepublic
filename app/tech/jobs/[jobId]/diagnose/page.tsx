@@ -29,12 +29,14 @@ export default async function DiagnosePage({
   const { session: sessionId, node: nodeIdParam } = await searchParams;
   if (!sessionId) notFound();
 
-  const job = getJob(jobId);
-  let session = getSession(sessionId);
-  if (!job || !session) notFound();
+  const [job, session0] = await Promise.all([getJob(jobId), getSession(sessionId)]);
+  if (!job || !session0) notFound();
+  let session = session0;
 
-  const tree = getTree(session.tree_id);
-  const node = nodeIdParam ? getNode(nodeIdParam) : getRootNode(session.tree_id);
+  const [tree, node] = await Promise.all([
+    getTree(session.tree_id),
+    nodeIdParam ? getNode(nodeIdParam) : getRootNode(session.tree_id),
+  ]);
   if (!node) notFound();
 
   if (node.node_type === "question") {
@@ -65,7 +67,7 @@ export default async function DiagnosePage({
   }
 
   if (node.node_type === "photo") {
-    const categories = listVisionCategories().map((c: any) => ({ id: c.id, name: c.name }));
+    const categories = (await listVisionCategories()).map((c: any) => ({ id: c.id, name: c.name }));
     return (
       <div className="mx-auto max-w-lg">
         <BackBar jobId={jobId} treeName={tree.name} />
@@ -77,23 +79,23 @@ export default async function DiagnosePage({
   // result node
   if (session.status === "in_progress") {
     const result = JSON.parse(node.result_json);
-    completeSessionWithResult(sessionId, result);
-    session = getSession(sessionId);
+    await completeSessionWithResult(sessionId, result);
+    session = await getSession(sessionId);
   }
 
   const secondary = JSON.parse(session.secondary_diagnoses_json || "[]") as { name: string; confidence: number }[];
   const parts = JSON.parse(session.parts_recommended_json || "[]") as { partNumber: string; name: string; qty: number }[];
-  const bulletin = getBulletin(node.bulletin_id);
-  const truck = getTruckForTech(user.id);
-  const stock = truck?.truck_id ? getTruckStock(truck.truck_id) : [];
+  const scaleRelated = /scale|hardness|mineral|sediment/i.test(session.primary_diagnosis || "");
+  const [bulletin, truck, estimate, regionalContext] = await Promise.all([
+    getBulletin(node.bulletin_id),
+    getTruckForTech(user.id),
+    getEstimateForJob(jobId),
+    scaleRelated ? getRegionalContextForAddress(job.customer_address) : Promise.resolve(null),
+  ]);
+  const stock = truck?.truck_id ? await getTruckStock(truck.truck_id) : [];
   const stockByPart = new Map(stock.map((s: any) => [s.part_number, s]));
 
   const secondOpinionRecommended = session.confidence < 65 || !!session.safety_critical;
-
-  const scaleRelated = /scale|hardness|mineral|sediment/i.test(session.primary_diagnosis || "");
-  const regionalContext = scaleRelated ? getRegionalContextForAddress(job.customer_address) : null;
-
-  const estimate = getEstimateForJob(jobId);
 
   return (
     <div className="mx-auto max-w-lg">
