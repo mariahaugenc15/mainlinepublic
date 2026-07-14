@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { requireRole } from "@/lib/guard";
 import { listAllTechs, listUnassignedJobs } from "@/lib/data";
 import { assignIntakeJobAction } from "@/app/admin/actions";
@@ -15,8 +16,15 @@ export default async function IntakeQueuePage({ searchParams }: { searchParams: 
 
   return (
     <div>
-      <h1 className="mb-1 text-2xl font-semibold text-navy-900">Intake Queue</h1>
-      <p className="mb-6 text-sm text-ink-500">New calls awaiting dispatch — assign a technician and a time</p>
+      <div className="mb-6 flex items-start justify-between">
+        <div>
+          <h1 className="mb-1 text-2xl font-semibold text-navy-900">Job Queue</h1>
+          <p className="text-sm text-ink-500">New calls awaiting dispatch — assign a technician and a time</p>
+        </div>
+        <Link href="/admin/jobs/new" className="rounded-lg bg-navy-900 px-4 py-2 text-sm font-semibold text-white hover:bg-navy-800">
+          + New Job
+        </Link>
+      </div>
 
       {assigned && (
         <div className="mb-4 rounded-lg border border-success/30 bg-success/10 px-4 py-2.5 text-sm font-medium text-success">
