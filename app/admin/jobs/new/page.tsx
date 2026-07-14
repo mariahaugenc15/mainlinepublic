@@ -5,7 +5,7 @@ import { createJobAction } from "@/app/admin/actions";
 export default async function NewJobPage({ searchParams }: { searchParams: Promise<{ created?: string }> }) {
   await requireRole("ADMIN");
   const { created } = await searchParams;
-  const techs = listAllTechs();
+  const techs = await listAllTechs();
   const equipmentTypes = listEquipmentTypes();
 
   return (

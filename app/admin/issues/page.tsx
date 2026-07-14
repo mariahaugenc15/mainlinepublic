@@ -5,10 +5,9 @@ import { getIssueTypeBreakdown, getIssueTypeDetail, listTrees } from "@/lib/data
 export default async function IssuesPage({ searchParams }: { searchParams: Promise<{ tree?: string }> }) {
   await requireRole("ADMIN");
   const { tree } = await searchParams;
-  const breakdown = getIssueTypeBreakdown();
-  const trees = listTrees();
+  const [breakdown, trees] = await Promise.all([getIssueTypeBreakdown(), listTrees()]);
   const selectedTree = tree ? trees.find((t: any) => t.id === tree) : undefined;
-  const detail = tree ? getIssueTypeDetail(tree) : [];
+  const detail = tree ? await getIssueTypeDetail(tree) : [];
 
   return (
     <div>

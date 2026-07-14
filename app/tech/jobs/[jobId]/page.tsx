@@ -7,13 +7,15 @@ import { startDiagnosticAction } from "@/app/tech/actions";
 export default async function JobDetailPage({ params }: { params: Promise<{ jobId: string }> }) {
   const user = await requireRole("TECH");
   const { jobId } = await params;
-  const job = getJob(jobId);
+  const job = await getJob(jobId);
   if (!job) notFound();
 
-  const history = getCustomerHistory(job.customer_id, jobId);
-  const existingSession = getSessionForJob(jobId);
-  const truck = getTruckForTech(user.id);
-  const stock = truck?.truck_id ? getTruckStock(truck.truck_id) : [];
+  const [history, existingSession, truck] = await Promise.all([
+    getCustomerHistory(job.customer_id, jobId),
+    getSessionForJob(jobId),
+    getTruckForTech(user.id),
+  ]);
+  const stock = truck?.truck_id ? await getTruckStock(truck.truck_id) : [];
 
   const treeId = getTreeIdForEquipmentType(job.equipment_type);
 

@@ -13,7 +13,7 @@ export default async function PublicEstimatePage({
 }) {
   const { estimateId } = await params;
   const { signed } = await searchParams;
-  const estimate = getEstimate(estimateId);
+  const estimate = await getEstimate(estimateId);
   if (!estimate) notFound();
 
   const parts = JSON.parse(estimate.parts_json || "[]") as { name: string; qty: number; lineCost: number }[];

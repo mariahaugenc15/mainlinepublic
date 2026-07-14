@@ -16,9 +16,9 @@ export default async function CloseoutPage({
   const { session: sessionId } = await searchParams;
   if (!sessionId) notFound();
 
-  const session = getSession(sessionId);
+  const session = await getSession(sessionId);
   if (!session) notFound();
-  const so = getSecondOpinionForSession(sessionId);
+  const so = await getSecondOpinionForSession(sessionId);
   const parts = JSON.parse(session.parts_recommended_json || "[]");
   const suggestedDiagnosis = so?.status === "redirected" && so.redirected_diagnosis ? so.redirected_diagnosis : session.primary_diagnosis;
 

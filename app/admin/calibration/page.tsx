@@ -3,7 +3,7 @@ import { getConfidenceCalibration } from "@/lib/data";
 
 export default async function CalibrationPage() {
   await requireRole("ADMIN");
-  const bands = getConfidenceCalibration();
+  const bands = await getConfidenceCalibration();
 
   return (
     <div>

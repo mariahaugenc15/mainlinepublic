@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { createIntakeJob } from "@/lib/data";
 
 export async function submitPublicIntakeAction(formData: FormData) {
-  const { jobId } = createIntakeJob({
+  const { jobId } = await createIntakeJob({
     customerName: String(formData.get("customerName")),
     address: String(formData.get("address")),
     phone: String(formData.get("phone") || ""),

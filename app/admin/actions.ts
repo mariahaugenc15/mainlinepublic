@@ -22,31 +22,31 @@ export async function createPurchaseOrderAction(formData: FormData) {
   const vendorId = String(formData.get("vendorId"));
   const partId = String(formData.get("partId"));
   const quantity = Number(formData.get("quantity") || 0);
-  const vendors = listVendorsForPart(partId);
+  const vendors = await listVendorsForPart(partId);
   const pricing = vendors.find((v: any) => v.id === vendorId);
   const unitPrice = pricing?.price ?? 0;
 
-  createPurchaseOrder(vendorId, [{ partId, quantity, unitPrice }], user.id);
+  await createPurchaseOrder(vendorId, [{ partId, quantity, unitPrice }], user.id);
   redirect("/admin/procurement?ordered=" + partId);
 }
 
 export async function fulfillRestockAction(formData: FormData) {
   await requireRole("ADMIN");
   const restockId = String(formData.get("restockId"));
-  fulfillRestockRequest(restockId);
+  await fulfillRestockRequest(restockId);
   redirect("/admin/procurement?fulfilled=" + restockId);
 }
 
 export async function refreshRegionalDataAction(formData: FormData) {
   await requireRole("ADMIN");
   const source = String(formData.get("source") || "live_api");
-  const result = source === "bulk_csv" ? runBulkCsvIngestion() : await runLiveIngestion(["MI"]);
+  const result = source === "bulk_csv" ? await runBulkCsvIngestion() : await runLiveIngestion(["MI"]);
   redirect(`/admin?regionalRefresh=${result.status}`);
 }
 
 export async function createJobAction(formData: FormData) {
   await requireRole("ADMIN");
-  const { jobId } = createIntakeJob({
+  const { jobId } = await createIntakeJob({
     customerName: String(formData.get("customerName")),
     address: String(formData.get("address")),
     phone: String(formData.get("phone") || ""),
@@ -70,7 +70,7 @@ export async function assignIntakeJobAction(formData: FormData) {
   const jobId = String(formData.get("jobId"));
   const techId = String(formData.get("techId"));
   const scheduledAt = String(formData.get("scheduledAt"));
-  assignJobTech(jobId, techId, scheduledAt);
+  await assignJobTech(jobId, techId, scheduledAt);
   redirect(`/admin/intake?assigned=${jobId}`);
 }
 
@@ -78,14 +78,14 @@ export async function updateCompanyNameAction(formData: FormData) {
   await requireRole("ADMIN");
   const name = String(formData.get("companyName") || "").trim();
   if (!name) return;
-  setCompanyName(name);
+  await setCompanyName(name);
   redirect(`/admin/pricing?updated=name`);
 }
 
 export async function updateMarkupAction(formData: FormData) {
   await requireRole("ADMIN");
   const pct = Number(formData.get("markupPct") || 0);
-  setDefaultMarkupPct(pct);
+  await setDefaultMarkupPct(pct);
   redirect(`/admin/pricing?updated=markup`);
 }
 
@@ -93,7 +93,7 @@ export async function updateTechRateAction(formData: FormData) {
   await requireRole("ADMIN");
   const userId = String(formData.get("userId"));
   const rate = Number(formData.get("hourlyRate") || 0);
-  setTechHourlyRate(userId, rate);
+  await setTechHourlyRate(userId, rate);
   redirect(`/admin/pricing?updated=${userId}`);
 }
 
@@ -115,7 +115,7 @@ export async function updateCompanyProfileAction(formData: FormData) {
     }
   }
 
-  setCompanyProfile({
+  await setCompanyProfile({
     company_name: String(formData.get("company_name") || "").trim() || "Your Company",
     address: String(formData.get("address") || "").trim(),
     phone: String(formData.get("phone") || "").trim(),

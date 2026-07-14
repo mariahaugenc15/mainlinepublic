@@ -10,7 +10,7 @@ export default async function CompanyProfilePage({
 }) {
   await requireRole("ADMIN");
   const { saved } = await searchParams;
-  const s = getCompanySettings();
+  const s = await getCompanySettings();
 
   return (
     <div>

@@ -16,8 +16,7 @@ export default async function SecondOpinionPage({
   const { session: sessionId } = await searchParams;
   if (!sessionId) notFound();
 
-  const session = getSession(sessionId);
-  const so = getSecondOpinionForSession(sessionId);
+  const [session, so] = await Promise.all([getSession(sessionId), getSecondOpinionForSession(sessionId)]);
   if (!session || !so) notFound();
 
   return (

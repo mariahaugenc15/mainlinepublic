@@ -5,8 +5,7 @@ import { updateCompanyNameAction, updateMarkupAction, updateTechRateAction } fro
 export default async function PricingPage({ searchParams }: { searchParams: Promise<{ updated?: string }> }) {
   await requireRole("ADMIN");
   const { updated } = await searchParams;
-  const settings = getCompanySettings();
-  const techs = listAllTechs();
+  const [settings, techs] = await Promise.all([getCompanySettings(), listAllTechs()]);
 
   return (
     <div>

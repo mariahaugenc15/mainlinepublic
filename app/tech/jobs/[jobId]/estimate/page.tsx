@@ -16,8 +16,7 @@ export default async function TechEstimatePage({
   const { estimate: estimateId } = await searchParams;
   if (!estimateId) notFound();
 
-  const job = getJob(jobId);
-  const estimate = getEstimate(estimateId);
+  const [job, estimate] = await Promise.all([getJob(jobId), getEstimate(estimateId)]);
   if (!job || !estimate) notFound();
 
   const parts = JSON.parse(estimate.parts_json || "[]") as { name: string; qty: number; unitCost: number; lineCost: number }[];
