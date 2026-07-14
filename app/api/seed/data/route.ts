@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const sql = neon(process.env.DATABASE_URL ?? "");
+    const sql = (q: string, p: any[] = []) => (neon(process.env.DATABASE_URL ?? "") as any)(q, p);
 
     // Clear tables that have data
     const tables = ["vendor_pricing","vendors","truck_stock","trucks","parts","job_outcomes","second_opinions","photo_analyses","diagnostic_sessions","jobs","diagnostic_nodes","diagnostic_trees","technical_bulletins","manufacturers","defect_codes","vision_defect_categories","equipment","customers","users"];

@@ -10,7 +10,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
   }
 
-  const sql = neon(process.env.DATABASE_URL ?? "");
+  const sql = (q: string, p: any[] = []) => (neon(process.env.DATABASE_URL ?? "") as any)(q, p);
 
   async function run(query: string, params: unknown[] = []) {
     let n = 0;

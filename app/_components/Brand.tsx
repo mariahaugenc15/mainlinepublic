@@ -2,8 +2,10 @@ import Image from "next/image";
 import { getCompanySettings } from "@/lib/data";
 
 export async function getBrandName() {
-  const settings = await getCompanySettings();
-  return settings?.company_name || "Your Company";
+  try {
+    const settings = await getCompanySettings();
+    return settings?.company_name || "Your Company";
+  } catch { return "Your Company"; }
 }
 
 export default async function Brand({
@@ -13,7 +15,8 @@ export default async function Brand({
   size?: "sm" | "md" | "lg";
   light?: boolean;
 }) {
-  const settings = await getCompanySettings();
+  let settings: any = null;
+  try { settings = await getCompanySettings(); } catch {}
   const companyName = settings?.company_name || "Your Company";
   const logoPath = settings?.logo_path || "";
 
