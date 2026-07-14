@@ -11,7 +11,8 @@ export async function GET(req: NextRequest) {
   }
 
   const url = process.env.DATABASE_URL ?? process.env.POSTGRES_URL ?? process.env.POSTGRES_URL_NON_POOLING ?? "";
-  const sql = (q: string, p: any[] = []) => (neon(url) as any)(q, p);
+  const db = neon(url);
+  const sql = (q: string, p: any[] = []) => db.query(q, p);
 
   async function run(query: string, params: unknown[] = []) {
     let n = 0;

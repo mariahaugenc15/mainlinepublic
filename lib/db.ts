@@ -13,4 +13,8 @@ function getClient() {
 export const sql: {
   (strings: TemplateStringsArray, ...values: any[]): Promise<any[]>;
   (query: string, params?: any[]): Promise<any[]>;
-} = ((strings: any, ...values: any[]) => (getClient() as any)(strings, ...values)) as any;
+} = ((strings: any, ...values: any[]) => {
+  const client = getClient();
+  if (typeof strings === "string") return (client as any).query(strings, values[0] ?? []);
+  return (client as any)(strings, ...values);
+}) as any;

@@ -10,7 +10,7 @@ export async function GET(req: NextRequest) {
 
   try {
     const url = process.env.DATABASE_URL ?? process.env.POSTGRES_URL ?? process.env.POSTGRES_URL_NON_POOLING ?? "";
-    const sql = (q: string, p: any[] = []) => (neon(url) as any)(q, p);
+    const sql = (q: string) => neon(url).query(q);
 
     await sql(`CREATE TABLE IF NOT EXISTS users (id TEXT PRIMARY KEY, email TEXT UNIQUE NOT NULL, password_hash TEXT NOT NULL, name TEXT NOT NULL, role TEXT NOT NULL, photo_url TEXT, credential TEXT, years_experience INTEGER, truck_id TEXT, hourly_rate REAL, created_at TEXT NOT NULL DEFAULT (NOW()::TEXT))`);
     await sql(`CREATE TABLE IF NOT EXISTS customers (id TEXT PRIMARY KEY, name TEXT NOT NULL, address TEXT NOT NULL, phone TEXT, email TEXT, lead_source TEXT, created_at TEXT NOT NULL DEFAULT (NOW()::TEXT))`);

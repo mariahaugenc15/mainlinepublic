@@ -12,7 +12,8 @@ export async function GET(req: NextRequest) {
 
   try {
     const url = process.env.DATABASE_URL ?? process.env.POSTGRES_URL ?? process.env.POSTGRES_URL_NON_POOLING ?? "";
-    const sql = (q: string, p: any[] = []) => (neon(url) as any)(q, p);
+    const db = neon(url);
+    const sql = (q: string, p: any[] = []) => db.query(q, p);
 
     // Clear tables that have data
     const tables = ["vendor_pricing","vendors","truck_stock","trucks","parts","job_outcomes","second_opinions","photo_analyses","diagnostic_sessions","jobs","diagnostic_nodes","diagnostic_trees","technical_bulletins","manufacturers","defect_codes","vision_defect_categories","equipment","customers","users"];
