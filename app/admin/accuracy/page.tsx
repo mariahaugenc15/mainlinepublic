@@ -26,9 +26,9 @@ export default async function AccuracyPage({
           ))}
         </select>
         <select name="matched" defaultValue={filters.matched ?? ""} className="rounded-lg border border-sand-300 px-3 py-2 text-sm">
-          <option value="">Matched or redirected</option>
-          <option value="true">Matched only</option>
-          <option value="false">Redirected only</option>
+          <option value="">All outcomes</option>
+          <option value="true">Resolved only</option>
+          <option value="false">Not resolved only</option>
         </select>
         <select name="minConfidence" defaultValue={filters.minConfidence ?? ""} className="rounded-lg border border-sand-300 px-3 py-2 text-sm">
           <option value="">Any confidence</option>
@@ -50,7 +50,8 @@ export default async function AccuracyPage({
               <th className="px-4 py-3">AI Diagnosis</th>
               <th className="px-4 py-3">Confidence</th>
               <th className="px-4 py-3">Actual Diagnosis</th>
-              <th className="px-4 py-3">Result</th>
+              <th className="px-4 py-3">Outcome</th>
+              <th className="px-4 py-3">Time to Complete</th>
               <th className="px-4 py-3">Closed</th>
             </tr>
           </thead>
@@ -63,9 +64,14 @@ export default async function AccuracyPage({
                 <td className="px-4 py-3 text-ink-700">{s.confidence}%</td>
                 <td className="px-4 py-3 text-ink-700">{s.actual_diagnosis}</td>
                 <td className="px-4 py-3">
-                  <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${s.matched ? "bg-success/10 text-success" : "bg-amber-100 text-amber-600"}`}>
-                    {s.matched ? "Matched" : "Redirected"}
-                  </span>
+                  {(() => {
+                    if (s.matched) return <span className="rounded-full bg-success/10 px-2 py-0.5 text-xs font-semibold text-success">Resolved</span>;
+                    if (s.second_opinion_requested) return <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-600">Assistance Requested</span>;
+                    return <span className="rounded-full bg-danger/10 px-2 py-0.5 text-xs font-semibold text-danger">New Technician Needed</span>;
+                  })()}
+                </td>
+                <td className="px-4 py-3 text-ink-700">
+                  {s.est_repair_time_minutes ? `${s.est_repair_time_minutes} min` : "—"}
                 </td>
                 <td className="px-4 py-3 text-ink-500">{s.closed_at?.slice(0, 10)}</td>
               </tr>
