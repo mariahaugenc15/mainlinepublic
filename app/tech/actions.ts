@@ -110,6 +110,20 @@ export async function requestRestockAction(formData: FormData) {
   redirect(`/tech/truck?requested=${partId}`);
 }
 
+export async function startPhotoAction(formData: FormData) {
+  const user = await requireRole("TECH");
+  const jobId = String(formData.get("jobId"));
+  const categoryId = String(formData.get("categoryId"));
+  const confidence = Number(formData.get("confidence"));
+
+  const job = await getJob(jobId);
+  const treeId = getTreeIdForEquipmentType(job.equipment_type) ?? "tree_gwh";
+  const sessionId = await createSession(jobId, treeId, user.id);
+  // Record photo analysis before tree navigation begins
+  await recordPhotoAnalysis(sessionId, null, categoryId, confidence);
+  redirect(`/tech/jobs/${jobId}/diagnose?session=${sessionId}`);
+}
+
 export async function cancelJobDiagnosticAction(jobId: string) {
   await requireRole("TECH");
   await setJobStatus(jobId, "scheduled");

@@ -34,8 +34,15 @@ export default function CloseoutForm({
       <input type="hidden" name="matched" value={String(actualDiagnosis === primaryDiagnosis)} />
       <input type="hidden" name="partsUsed" value={JSON.stringify(partsUsed)} />
 
+      {/* AI accuracy rating — this feedback trains the model */}
       <div className="rounded-xl border border-sand-300 bg-white p-5 shadow-sm">
-        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-ink-500">Did the AI diagnosis match?</h2>
+        <div className="mb-1 flex items-start justify-between">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-ink-500">Rate the AI diagnosis</h2>
+          <span className="rounded-full bg-navy-900/10 px-2 py-0.5 text-xs font-semibold text-navy-800">Trains the model</span>
+        </div>
+        <p className="mb-3 text-xs text-ink-500">
+          HauGen diagnosed: <span className="font-semibold text-ink-700">{primaryDiagnosis}</span>
+        </p>
         <div className="flex flex-col gap-2">
           <button
             type="button"
@@ -43,32 +50,37 @@ export default function CloseoutForm({
               setMatched("yes");
               setActualDiagnosis(primaryDiagnosis);
             }}
-            className={`flex h-12 items-center justify-between rounded-lg border px-4 text-sm font-medium ${
+            className={`flex min-h-12 items-center gap-3 rounded-lg border px-4 py-3 text-sm font-medium text-left ${
               matched === "yes" ? "border-success bg-success/10 text-success" : "border-sand-300 text-ink-700"
             }`}
           >
-            Yes — matched: {primaryDiagnosis}
-            {matched === "yes" && <span>✓</span>}
+            <span className="text-base">✅</span>
+            <span>Accurate — matched the actual issue</span>
+            {matched === "yes" && <span className="ml-auto">✓</span>}
           </button>
           <button
             type="button"
             onClick={() => setMatched("no")}
-            className={`flex h-12 items-center justify-between rounded-lg border px-4 text-sm font-medium ${
+            className={`flex min-h-12 items-center gap-3 rounded-lg border px-4 py-3 text-sm font-medium text-left ${
               matched === "no" ? "border-amber-500 bg-amber-100 text-amber-600" : "border-sand-300 text-ink-700"
             }`}
           >
-            No — actual issue was different
-            {matched === "no" && <span>✓</span>}
+            <span className="text-base">❌</span>
+            <span>Inaccurate — actual issue was different</span>
+            {matched === "no" && <span className="ml-auto">✓</span>}
           </button>
         </div>
         {matched === "no" && (
-          <input
-            type="text"
-            value={actualDiagnosis === primaryDiagnosis ? "" : actualDiagnosis}
-            onChange={(e) => setActualDiagnosis(e.target.value)}
-            placeholder="What was the actual diagnosis?"
-            className="mt-3 w-full rounded-lg border border-sand-300 px-3 py-2.5 text-base outline-none focus:border-navy-600 focus:ring-2 focus:ring-navy-600/20"
-          />
+          <div className="mt-3">
+            <label className="mb-1 block text-xs font-semibold text-ink-500">What was the actual diagnosis?</label>
+            <input
+              type="text"
+              value={actualDiagnosis === primaryDiagnosis ? "" : actualDiagnosis}
+              onChange={(e) => setActualDiagnosis(e.target.value)}
+              placeholder="Describe the real issue — this improves future diagnoses"
+              className="w-full rounded-lg border border-sand-300 px-3 py-2.5 text-base outline-none focus:border-navy-600 focus:ring-2 focus:ring-navy-600/20"
+            />
+          </div>
         )}
       </div>
 

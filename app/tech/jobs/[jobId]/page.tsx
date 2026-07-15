@@ -71,15 +71,23 @@ export default async function JobDetailPage({ params }: { params: Promise<{ jobI
             Resume Diagnostic
           </Link>
         ) : (
-          <form action={startDiagnosticAction.bind(null, jobId)}>
-            <button
-              type="submit"
-              disabled={!treeId}
-              className="flex h-14 w-full items-center justify-center rounded-xl bg-navy-900 text-base font-semibold text-white shadow-sm active:bg-navy-800 disabled:opacity-50"
+          <>
+            <Link
+              href={`/tech/jobs/${jobId}/photo`}
+              className="flex h-14 items-center justify-center gap-2 rounded-xl bg-navy-900 text-base font-semibold text-white shadow-sm active:bg-navy-800"
             >
-              Start Diagnostic
-            </button>
-          </form>
+              <span>📷</span> Diagnose by Photo
+            </Link>
+            <form action={startDiagnosticAction.bind(null, jobId)}>
+              <button
+                type="submit"
+                disabled={!treeId}
+                className="flex h-12 w-full items-center justify-center rounded-xl border border-sand-300 bg-white text-sm font-medium text-navy-800 shadow-sm active:bg-sand-100 disabled:opacity-50"
+              >
+                Start Diagnostic (questions only)
+              </button>
+            </form>
+          </>
         )}
 
         {stock.length > 0 && (

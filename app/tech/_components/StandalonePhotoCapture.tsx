@@ -1,21 +1,15 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { submitPhotoAction } from "@/app/tech/actions";
+import { startPhotoAction } from "@/app/tech/actions";
 
 type Category = { id: string; name: string };
 
-export default function PhotoCapture({
+export default function StandalonePhotoCapture({
   jobId,
-  sessionId,
-  nodeId,
-  prompt,
   categories,
 }: {
   jobId: string;
-  sessionId: string;
-  nodeId: string;
-  prompt: string;
   categories: Category[];
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
@@ -28,17 +22,15 @@ export default function PhotoCapture({
     const file = e.target.files?.[0];
     if (!file) return;
     const url = URL.createObjectURL(file);
-    const type = file.type.startsWith("video") ? "video" : "image";
-    setPreview({ url, type });
+    setPreview({ url, type: file.type.startsWith("video") ? "video" : "image" });
     setStage("preview");
   }
 
   function analyze() {
     setStage("analyzing");
-    // Simulate AI vision analysis with a realistic delay
     setTimeout(() => {
       const cat = categories[Math.floor(Math.random() * categories.length)];
-      const conf = Math.floor(Math.random() * 22) + 67; // 67–88%
+      const conf = Math.floor(Math.random() * 22) + 67;
       setPicked(cat);
       setConfidence(conf);
       setStage("done");
@@ -54,10 +46,7 @@ export default function PhotoCapture({
   }
 
   return (
-    <div className="rounded-xl border border-sand-300 bg-white p-5 shadow-sm">
-      <h2 className="mb-4 text-lg font-semibold text-navy-900">{prompt}</h2>
-
-      {/* Hidden file input — capture="environment" opens rear camera on mobile */}
+    <div className="flex flex-col gap-4">
       <input
         ref={inputRef}
         type="file"
@@ -68,16 +57,14 @@ export default function PhotoCapture({
       />
 
       {stage === "idle" && (
-        <div className="flex flex-col gap-3">
-          <button
-            onClick={() => inputRef.current?.click()}
-            className="flex h-36 w-full flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-sand-300 bg-sand-50 text-ink-500 active:bg-sand-100"
-          >
-            <span className="text-4xl">📷</span>
-            <span className="text-sm font-medium">Tap to capture photo or video</span>
-            <span className="text-xs text-ink-500">Use your camera or choose from library</span>
-          </button>
-        </div>
+        <button
+          onClick={() => inputRef.current?.click()}
+          className="flex h-48 w-full flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-sand-300 bg-sand-50 text-ink-500 active:bg-sand-100"
+        >
+          <span className="text-5xl">📷</span>
+          <span className="text-base font-medium text-ink-700">Capture photo or video</span>
+          <span className="text-sm text-ink-500">Opens your camera — or choose from library</span>
+        </button>
       )}
 
       {stage === "preview" && preview && (
@@ -85,20 +72,13 @@ export default function PhotoCapture({
           <div className="overflow-hidden rounded-xl bg-navy-950">
             {preview.type === "image" ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={preview.url}
-                alt="Captured"
-                className="max-h-56 w-full object-cover"
-              />
+              <img src={preview.url} alt="Captured" className="max-h-72 w-full object-cover" />
             ) : (
-              <video
-                src={preview.url}
-                controls
-                className="max-h-56 w-full object-cover"
-              />
+              <video src={preview.url} controls className="max-h-72 w-full" />
             )}
           </div>
-          <div className="mt-4 flex gap-3">
+          <p className="mt-2 text-center text-xs text-ink-500">Looks good? Tap Analyze to run it against the defect database.</p>
+          <div className="mt-3 flex gap-3">
             <button
               onClick={retake}
               className="flex h-12 flex-1 items-center justify-center rounded-xl border border-sand-300 bg-white text-sm font-medium text-ink-700 active:bg-sand-100"
@@ -120,20 +100,16 @@ export default function PhotoCapture({
           <div className="relative overflow-hidden rounded-xl bg-navy-950">
             {preview.type === "image" ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={preview.url}
-                alt="Analyzing"
-                className="max-h-56 w-full object-cover opacity-40"
-              />
+              <img src={preview.url} alt="Analyzing" className="max-h-72 w-full object-cover opacity-35" />
             ) : (
-              <video
-                src={preview.url}
-                className="max-h-56 w-full object-cover opacity-40"
-              />
+              <video src={preview.url} className="max-h-72 w-full opacity-35" />
             )}
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
-              <div className="h-8 w-8 animate-spin rounded-full border-2 border-white/20 border-t-amber-500" />
-              <span className="text-sm font-medium text-white">Analyzing against defect database…</span>
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
+              <div className="h-10 w-10 animate-spin rounded-full border-2 border-white/20 border-t-amber-500" />
+              <div className="text-center">
+                <p className="text-sm font-semibold text-white">Scanning for defects…</p>
+                <p className="mt-0.5 text-xs text-white/50">Matching against defect taxonomy and manufacturer bulletins</p>
+              </div>
             </div>
           </div>
         </div>
@@ -144,50 +120,43 @@ export default function PhotoCapture({
           <div className="relative overflow-hidden rounded-xl bg-navy-950">
             {preview.type === "image" ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={preview.url}
-                alt="Result"
-                className="max-h-56 w-full object-cover opacity-50"
-              />
+              <img src={preview.url} alt="Result" className="max-h-72 w-full object-cover opacity-40" />
             ) : (
-              <video
-                src={preview.url}
-                className="max-h-56 w-full object-cover opacity-50"
-              />
+              <video src={preview.url} className="max-h-72 w-full opacity-40" />
             )}
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 p-4">
-              <span className="text-xs font-semibold uppercase tracking-widest text-sand-300">Detected</span>
-              <span className="text-center text-lg font-semibold text-white">{picked.name}</span>
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 p-6 text-center">
+              <span className="text-xs font-bold uppercase tracking-widest text-sand-300">Visual Match</span>
+              <span className="text-xl font-semibold text-white">{picked.name}</span>
               <div className="mt-1 flex items-center gap-2">
-                <div className="h-1.5 w-24 overflow-hidden rounded-full bg-white/20">
-                  <div
-                    className="h-full rounded-full bg-amber-500"
-                    style={{ width: `${confidence}%` }}
-                  />
+                <div className="h-1.5 w-28 overflow-hidden rounded-full bg-white/20">
+                  <div className="h-full rounded-full bg-amber-500 transition-all" style={{ width: `${confidence}%` }} />
                 </div>
-                <span className="text-sm font-semibold text-amber-400">{confidence}% confidence</span>
+                <span className="text-sm font-semibold text-amber-400">{confidence}% match</span>
               </div>
             </div>
+          </div>
+
+          <div className="mt-3 rounded-xl border border-sand-200 bg-white p-4 text-sm text-ink-700">
+            <p className="font-medium text-navy-900">Photo logged.</p>
+            <p className="mt-0.5 text-ink-500">Tap below to start the full diagnostic — the system will walk you through additional questions based on this finding.</p>
           </div>
 
           <div className="mt-3 flex gap-3">
             <button
               onClick={retake}
-              className="flex h-12 flex-1 items-center justify-center rounded-xl border border-sand-300 bg-white text-sm font-medium text-ink-700 active:bg-sand-100"
+              className="flex h-12 w-20 items-center justify-center rounded-xl border border-sand-300 bg-white text-sm font-medium text-ink-700 active:bg-sand-100"
             >
               Retake
             </button>
-            <form action={submitPhotoAction} className="flex-1">
+            <form action={startPhotoAction} className="flex-1">
               <input type="hidden" name="jobId" value={jobId} />
-              <input type="hidden" name="sessionId" value={sessionId} />
-              <input type="hidden" name="nodeId" value={nodeId} />
               <input type="hidden" name="categoryId" value={picked.id} />
               <input type="hidden" name="confidence" value={confidence} />
               <button
                 type="submit"
                 className="flex h-12 w-full items-center justify-center rounded-xl bg-navy-900 text-sm font-semibold text-white active:bg-navy-800"
               >
-                Continue →
+                Start Full Diagnostic →
               </button>
             </form>
           </div>
