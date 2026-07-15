@@ -1,20 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { sql } from "@/lib/db";
 
-export async function POST(req: NextRequest) {
-  const secret = process.env.STRIPE_WEBHOOK_SECRET;
-  const signature = req.headers.get("stripe-signature");
+// Stripe integration is not yet active — webhook is a no-op placeholder
 
-  // In demo mode or without secret, skip signature verification
-  if (secret && signature) {
-    try {
-      const stripe = (await import("stripe")).default;
-      const client = new stripe(process.env.STRIPE_SECRET_KEY ?? "");
-      const body = await req.text();
-      client.webhooks.constructEvent(body, signature, secret);
-    } catch (e: any) {
-      return NextResponse.json({ error: "Webhook signature verification failed" }, { status: 400 });
-    }
+export async function POST(req: NextRequest) {
+  // Demo mode: Stripe not yet integrated, accept but ignore all events
+  if (process.env.BILLING_MODE !== "live") {
+    return NextResponse.json({ received: true });
   }
 
   const payload = await req.json().catch(() => null);

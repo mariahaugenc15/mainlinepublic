@@ -46,7 +46,7 @@ export interface BillingEvent {
   status: "paid" | "pending" | "failed";
 }
 
-const DEMO_MODE = process.env.BILLING_MODE === "demo";
+const DEMO_MODE = true; // Stripe not yet integrated — all billing is demo mode
 
 const DEMO_STATE: BillingState = {
   plan: "professional",
