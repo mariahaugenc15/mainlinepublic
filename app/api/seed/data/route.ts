@@ -16,7 +16,7 @@ export async function GET(req: NextRequest) {
     const sql = (q: string, p: any[] = []) => db.query(q, p);
 
     // Clear tables that have data
-    const tables = ["vendor_pricing","vendors","restock_requests","truck_stock","trucks","parts","job_outcomes","second_opinions","photo_analyses","diagnostic_sessions","jobs","diagnostic_nodes","diagnostic_trees","technical_bulletins","manufacturers","defect_codes","vision_defect_categories","equipment","customers","users"];
+    const tables = ["purchase_order_items","purchase_orders","vendor_pricing","vendors","restock_requests","truck_stock","trucks","parts","estimates","job_outcomes","second_opinions","photo_analyses","diagnostic_sessions","jobs","diagnostic_nodes","diagnostic_trees","technical_bulletins","manufacturers","defect_codes","vision_defect_categories","equipment","customers","users"];
     for (const t of tables) await sql(`DELETE FROM ${t}`);
 
     // Users
