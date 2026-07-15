@@ -34,8 +34,20 @@ export async function GET(req: NextRequest) {
     // Manufacturers
     await sql(`INSERT INTO manufacturers (id,name,description) VALUES ('mfg_heatcore','Heatcore','Gas and electric water heating systems.'),('mfg_aquaflow','Aquaflow','Fixtures, valves, and fill systems.'),('mfg_vantage','Vantage Plumbing Systems','Drainage, sump, and pressure equipment.'),('mfg_coreline','Coreline','Pipe, fittings, and supply line hardware.')`);
 
-    // Defect codes (batch)
+    // Defect codes — existing plumbing codes
     await sql(`INSERT INTO defect_codes (id,code,family,description,severity_grade) VALUES ('dc_4','ST-CO-4','Structural','Corrosion, surface loss, advanced',4),('dc_5','OM-DE-3','Operational-Maintenance','Deposits, encrustation, moderate restriction',3),('dc_7','OM-RT-4','Operational-Maintenance','Roots, tap, major restriction',4),('dc_8','OM-SC-1','Operational-Maintenance','Scale, light buildup',1),('dc_9','OM-OB-3','Operational-Maintenance','Obstruction, debris, moderate',3)`);
+
+    // Sewer defect codes — sourced from Co-UDlabs/sewer_defects CCTV inspection taxonomy
+    // Classes: ObsPlc, ObsDep, ObsRot, Jnt, Crk, DmgHol, DmgSev, Cor
+    await sql(`INSERT INTO defect_codes (id,code,family,description,severity_grade) VALUES
+      ('dc_obs_plc','OM-OB-PLС','Operational-Maintenance','ObsPlc: Placed/lodged obstruction — complete or near-complete bore restriction',4),
+      ('dc_obs_dep','OM-DE-DEP','Operational-Maintenance','ObsDep: Deposited material — accumulated sediment or grease causing partial restriction',2),
+      ('dc_obs_rot','OM-RT-ROT','Operational-Maintenance','ObsRot: Root intrusion — tree root mass penetrating pipe wall or joint',4),
+      ('dc_jnt','ST-JN-JNT','Structural','Jnt: Joint defect — misaligned, open, or displaced pipe joint creating infiltration risk',2),
+      ('dc_crk','ST-CR-CRK','Structural','Crk: Crack — longitudinal or circumferential fracture compromising structural integrity',3),
+      ('dc_dmg_hol','ST-DH-HOL','Structural','DmgHol: Hole damage — penetrating wall loss, critical structural failure',5),
+      ('dc_dmg_sev','ST-DS-SEV','Structural','DmgSev: Severe deformation — collapsed or buckled pipe, emergency excavation likely required',5),
+      ('dc_cor_sw','ST-CO-COR','Structural','Cor: Corrosion — material degradation from chemical or biological attack in sewer environment',3)`);
 
     // Technical bulletins (key ones)
     await sql(`INSERT INTO technical_bulletins (id,bulletin_number,manufacturer_id,product_line,symptom,root_cause,recommended_fix,applicable_models,defect_code_id) VALUES
@@ -56,9 +68,12 @@ export async function GET(req: NextRequest) {
       ('bul_17','CL-TB-525','mfg_coreline','Whole-Home Pressure','Low pressure house-wide, gradual','Galvanized pipe interior scaling or PRV drift','Test pressure at hose bib; service or replace PRV','Universal','dc_8'),
       ('bul_18','CL-TB-540','mfg_coreline','Whole-Home Pressure','High pressure, hammer/noise','PRV failure','Install or replace PRV, set to 55-65 PSI','Universal',NULL),
       ('bul_19','HC-TB-1290','mfg_heatcore','ProSeries Gas','Intermittent flashing status light','Flame sensor signal interruption','Inspect flame sensor for soot; clean with fine abrasive','PS50-GAS, PS75-GAS',NULL),
-      ('bul_20','AF-TB-280','mfg_aquaflow','QuietFill Toilet','Weak flush','Mineral scale blocking rim jets','Descale rim jets with wire pick and vinegar','QF-200, QF-300','dc_8')`);
+      ('bul_20','AF-TB-280','mfg_aquaflow','QuietFill Toilet','Weak flush','Mineral scale blocking rim jets','Descale rim jets with wire pick and vinegar','QF-200, QF-300','dc_8'),
+      ('bul_21','VT-TB-360','mfg_vantage','SewerLine','Root intrusion visible at joint, recurring backup','Biologic root penetration at clay-to-PVC transition joint','Hydro-jet with root cutting head; recommend CIPP liner if joint > 2in open','4in Sewer, Clay or VCP','dc_obs_rot'),
+      ('bul_22','VT-TB-375','mfg_vantage','SewerLine','Pipe belly or sag, standing water at low point','Grade reversal from soil settlement','Excavate, re-grade, and replace affected run','4in-6in Gravity Sewer','dc_dmg_sev'),
+      ('bul_23','VT-TB-390','mfg_vantage','SewerLine','Corrosion pitting on pipe invert, hydrogen sulfide odor','Biogenic sulfide corrosion — anaerobic bacterial activity on invert','Assess remaining wall thickness; spot-reline or full replacement based on severity','All Sewer Pipe Materials','dc_cor_sw')`);
 
-    // Vision defect categories
+    // Vision defect categories — plumbing fixture detection
     await sql(`INSERT INTO vision_defect_categories (id,name,description) VALUES
       ('vdc_1','Corrosion','Visible metal oxidation on fittings, tanks, or valve bodies'),
       ('vdc_2','Scaling / Mineral Deposits','White/chalky mineral buildup from hard water'),
@@ -68,6 +83,19 @@ export async function GET(req: NextRequest) {
       ('vdc_6','Sediment Buildup','Granular debris accumulation at tank floor or pipe invert'),
       ('vdc_7','Sensor Fouling','Soot or debris coating a flame or pressure sensor'),
       ('vdc_8','Active Drip','Visible water droplet formation indicating live leak')`);
+
+    // Vision defect categories — sewer line CCTV inspection
+    // Source: Co-UDlabs/sewer_defects (github.com/Co-UDlabs/sewer_defects)
+    // 8 classes from YOLO v8 model trained on labeled CCTV sewer pipe imagery
+    await sql(`INSERT INTO vision_defect_categories (id,name,description) VALUES
+      ('vdc_cou_1','ObsPlc — Placed Obstruction','Solid mass placed or lodged in pipe bore; partial or complete flow blockage. Source: Co-UDlabs sewer_defects'),
+      ('vdc_cou_2','ObsDep — Deposited Material','Accumulated sediment, grease, or debris on pipe invert; gradual restriction. Source: Co-UDlabs sewer_defects'),
+      ('vdc_cou_3','ObsRot — Root Intrusion','Tree root mass penetrating pipe wall or joint; biologic infiltration. Source: Co-UDlabs sewer_defects'),
+      ('vdc_cou_4','Jnt — Joint Defect','Misaligned, open, or displaced pipe joint; groundwater infiltration risk. Source: Co-UDlabs sewer_defects'),
+      ('vdc_cou_5','Crk — Crack','Longitudinal or circumferential fracture in pipe wall; structural compromise. Source: Co-UDlabs sewer_defects'),
+      ('vdc_cou_6','DmgHol — Hole Damage','Penetrating loss through pipe wall; critical structural failure. Source: Co-UDlabs sewer_defects'),
+      ('vdc_cou_7','DmgSev — Severe Deformation','Collapsed, buckled, or heavily deformed pipe section; emergency condition. Source: Co-UDlabs sewer_defects'),
+      ('vdc_cou_8','Cor — Corrosion (Sewer)','Material degradation from chemical or biological attack in sewer environment. Source: Co-UDlabs sewer_defects')`);
 
     // Parts
     await sql(`INSERT INTO parts (id,part_number,name,category,unit_cost,default_threshold) VALUES
@@ -90,7 +118,11 @@ export async function GET(req: NextRequest) {
       ('part_PRV-STD-75','PRV-STD-75','Pressure Reducing Valve, Standard','Supply',58.0,1),
       ('part_FLOAT-SW-UNIV','FLOAT-SW-UNIV','Universal Float Switch','Sump',24.0,2),
       ('part_CHECK-VALVE-1.5','CHECK-VALVE-1.5','Check Valve, 1.5in','Sump',16.0,3),
-      ('part_SUMP-PUMP-13HP','SUMP-PUMP-13HP','Sump Pump, 1/3 HP','Sump',110.0,1)`);
+      ('part_SUMP-PUMP-13HP','SUMP-PUMP-13HP','Sump Pump, 1/3 HP','Sump',110.0,1),
+      ('part_CIPP-LINER-4IN','CIPP-LINER-4IN','CIPP Liner, 4in Sewer','Sewer',285.0,0),
+      ('part_JOINT-REPAIR-4IN','JOINT-REPAIR-4IN','Lateral Joint Repair Coupling, 4in','Sewer',48.0,1),
+      ('part_HYDRO-JET-FLAT','HYDRO-JET-FLAT','Hydro-Jet Flat Nozzle, 4000 PSI','Sewer',0,1),
+      ('part_SEWER-PLUG-4IN','SEWER-PLUG-4IN','Test Plug, 4in','Sewer',12.0,2)`);
 
     // Truck stock
     const stockParts = ['TC-UNIV-18','GCV-STD-40','FS-STD-01','FLUSH-KIT','FLAP-UNIV-3IN','FILLVALVE-UNIV','TRAP-CLEAN-KIT','P-TRAP-PVC-1.5','SUPPLY-LINE-BRD-20','FLOAT-SW-UNIV','CHECK-VALVE-1.5'];
@@ -159,6 +191,36 @@ export async function GET(req: NextRequest) {
         {optionValue:"single",node:{type:"result",prompt:"",result:{primaryDiagnosis:"Local trap/branch clog, hair or debris buildup",confidence:79,secondaryDiagnoses:[{name:"P-trap corrosion",confidence:12}],parts:[{partNumber:"P-TRAP-PVC-1.5",name:"P-Trap, PVC 1.5in",qty:1}],estRepairTimeMinutes:30,safetyCritical:false}}},
         {optionValue:"multiple",node:{type:"result",prompt:"",bulletinId:"bul_10",result:{primaryDiagnosis:"Grease/soap buildup in shared branch line",confidence:71,secondaryDiagnoses:[{name:"Root intrusion at branch joint",confidence:19}],parts:[{partNumber:"ENZYME-TREAT",name:"Enzymatic Drain Treatment",qty:2}],estRepairTimeMinutes:60,safetyCritical:false,bulletinId:"bul_10"}}},
         {optionValue:"whole_house",node:{type:"result",prompt:"",bulletinId:"bul_12",result:{primaryDiagnosis:"Main line obstruction — debris or root intrusion",confidence:64,secondaryDiagnoses:[{name:"Pipe bellying",confidence:18}],parts:[{partNumber:"ROOT-CUT-HEAD",name:"Hydro-Jet Root Cutting Head",qty:1}],estRepairTimeMinutes:90,safetyCritical:false,bulletinId:"bul_12"}}},
+      ]
+    }, null, null);
+
+    // Sewer line inspection tree — Co-UDlabs/sewer_defects taxonomy
+    // Photo-first flow: tech captures CCTV or phone photo at cleanout, then branches by defect class
+    await sql(`INSERT INTO diagnostic_trees (id,name,equipment_type,description) VALUES ('tree_sewer','Sewer Line Inspection','Sewer Line','Photo-first diagnostic using Co-UDlabs sewer defect taxonomy (ObsPlc, ObsDep, ObsRot, Jnt, Crk, DmgHol, DmgSev, Cor)')`);
+    await insertNode("tree_sewer", {
+      type:"photo", prompt:"Capture a photo or video at the cleanout access point. HauGen will match it against the sewer defect database.",
+      children:[
+        {optionValue:"_continue",node:{
+          type:"question",prompt:"What does the visual inspection confirm?",
+          options:[
+            {value:"deposits",label:"Deposits / grease / sediment buildup (ObsDep)"},
+            {value:"roots",label:"Root intrusion at joint or wall (ObsRot)"},
+            {value:"blockage",label:"Placed or lodged obstruction, complete block (ObsPlc)"},
+            {value:"joint",label:"Joint offset, open gap, or displacement (Jnt)"},
+            {value:"crack",label:"Crack — longitudinal or circumferential (Crk)"},
+            {value:"collapse",label:"Hole, severe deformation, or collapse (DmgSev/DmgHol)"},
+            {value:"corrosion",label:"Corrosion pitting or surface degradation (Cor)"},
+          ],
+          children:[
+            {optionValue:"deposits",node:{type:"result",prompt:"",bulletinId:"bul_10",result:{primaryDiagnosis:"ObsDep — Deposited material causing restriction",confidence:77,secondaryDiagnoses:[{name:"ObsPlc — Lodged solid obstruction",confidence:14}],parts:[{partNumber:"HYDRO-JET-FLAT",name:"Hydro-Jet Flat Nozzle, 4000 PSI",qty:1},{partNumber:"ENZYME-TREAT",name:"Enzymatic Drain Treatment",qty:2}],estRepairTimeMinutes:60,safetyCritical:false}}},
+            {optionValue:"roots",node:{type:"result",prompt:"",bulletinId:"bul_21",result:{primaryDiagnosis:"ObsRot — Root intrusion at pipe joint or wall breach",confidence:85,secondaryDiagnoses:[{name:"Jnt — Joint displacement from root pressure",confidence:11}],parts:[{partNumber:"ROOT-CUT-HEAD",name:"Hydro-Jet Root Cutting Head",qty:1},{partNumber:"CIPP-LINER-4IN",name:"CIPP Liner, 4in Sewer",qty:1}],estRepairTimeMinutes:120,safetyCritical:false}}},
+            {optionValue:"blockage",node:{type:"result",prompt:"",bulletinId:"bul_10",result:{primaryDiagnosis:"ObsPlc — Placed or lodged obstruction, bore fully restricted",confidence:91,secondaryDiagnoses:[{name:"ObsDep — Heavy deposit pack",confidence:7}],parts:[{partNumber:"HYDRO-JET-FLAT",name:"Hydro-Jet Flat Nozzle, 4000 PSI",qty:1},{partNumber:"ROOT-CUT-HEAD",name:"Hydro-Jet Root Cutting Head",qty:1}],estRepairTimeMinutes:90,safetyCritical:false}}},
+            {optionValue:"joint",node:{type:"result",prompt:"",bulletinId:"bul_21",result:{primaryDiagnosis:"Jnt — Joint offset or open displacement, infiltration risk",confidence:72,secondaryDiagnoses:[{name:"Crk — Joint-area cracking",confidence:16}],parts:[{partNumber:"JOINT-REPAIR-4IN",name:"Lateral Joint Repair Coupling, 4in",qty:1}],estRepairTimeMinutes:90,safetyCritical:false}}},
+            {optionValue:"crack",node:{type:"result",prompt:"",result:{primaryDiagnosis:"Crk — Structural crack, pipe integrity compromised",confidence:68,secondaryDiagnoses:[{name:"DmgHol — Crack progressing to hole",confidence:19}],parts:[{partNumber:"CIPP-LINER-4IN",name:"CIPP Liner, 4in Sewer",qty:1},{partNumber:"SEWER-PLUG-4IN",name:"Test Plug, 4in",qty:2}],estRepairTimeMinutes:150,safetyCritical:false}}},
+            {optionValue:"collapse",node:{type:"result",prompt:"",bulletinId:"bul_22",result:{primaryDiagnosis:"DmgSev — Severe deformation or collapse, emergency excavation likely",confidence:88,secondaryDiagnoses:[{name:"DmgHol — Wall perforation adjacent to collapse",confidence:9}],parts:[{partNumber:"SEWER-PLUG-4IN",name:"Test Plug, 4in",qty:2}],estRepairTimeMinutes:240,safetyCritical:true}}},
+            {optionValue:"corrosion",node:{type:"result",prompt:"",bulletinId:"bul_23",result:{primaryDiagnosis:"Cor — Biogenic corrosion, pipe wall thinning on invert",confidence:74,secondaryDiagnoses:[{name:"Crk — Crack developing at corroded zone",confidence:17}],parts:[{partNumber:"CIPP-LINER-4IN",name:"CIPP Liner, 4in Sewer",qty:1}],estRepairTimeMinutes:180,safetyCritical:false}}},
+          ]
+        }}
       ]
     }, null, null);
 
