@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireRole } from "@/lib/guard";
 import { getCustomerHistory, getJob, getSessionForJob, getTruckForTech, getTruckStock, getTreeIdForEquipmentType } from "@/lib/data";
-import { startDiagnosticAction } from "@/app/tech/actions";
+import { startDiagnosticAction, cancelJobDiagnosticAction } from "@/app/tech/actions";
 
 export default async function JobDetailPage({ params }: { params: Promise<{ jobId: string }> }) {
   const user = await requireRole("TECH");
@@ -58,18 +58,28 @@ export default async function JobDetailPage({ params }: { params: Promise<{ jobI
 
       <div className="mt-6 flex flex-col gap-3">
         {existingSession && existingSession.status !== "closed" ? (
-          <Link
-            href={
-              existingSession.status === "awaiting_review"
-                ? `/tech/jobs/${jobId}/second-opinion?session=${existingSession.id}`
-                : existingSession.status === "diagnosed"
-                ? `/tech/jobs/${jobId}/closeout?session=${existingSession.id}`
-                : `/tech/jobs/${jobId}/diagnose?session=${existingSession.id}`
-            }
-            className="flex h-14 items-center justify-center rounded-xl bg-amber-500 text-base font-semibold text-navy-950 shadow-sm active:bg-amber-600"
-          >
-            Resume Diagnostic
-          </Link>
+          <>
+            <Link
+              href={
+                existingSession.status === "awaiting_review"
+                  ? `/tech/jobs/${jobId}/second-opinion?session=${existingSession.id}`
+                  : existingSession.status === "diagnosed"
+                  ? `/tech/jobs/${jobId}/closeout?session=${existingSession.id}`
+                  : `/tech/jobs/${jobId}/diagnose?session=${existingSession.id}`
+              }
+              className="flex h-14 items-center justify-center rounded-xl bg-amber-500 text-base font-semibold text-navy-950 shadow-sm active:bg-amber-600"
+            >
+              Resume Diagnostic
+            </Link>
+            <form action={cancelJobDiagnosticAction.bind(null, jobId)}>
+              <button
+                type="submit"
+                className="flex h-10 w-full items-center justify-center rounded-xl border border-sand-300 bg-white text-sm font-medium text-ink-500 active:bg-sand-100"
+              >
+                ← Start Over / Change Diagnostic Method
+              </button>
+            </form>
+          </>
         ) : (
           <>
             <Link
