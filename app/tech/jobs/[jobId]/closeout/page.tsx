@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireRole } from "@/lib/guard";
-import { getSecondOpinionForSession, getSession } from "@/lib/data";
+import { getSecondOpinionForSession, getSession, listAllParts } from "@/lib/data";
 import CloseoutForm from "@/app/tech/_components/CloseoutForm";
 
 export default async function CloseoutPage({
@@ -16,7 +16,7 @@ export default async function CloseoutPage({
   const { session: sessionId } = await searchParams;
   if (!sessionId) notFound();
 
-  const session = await getSession(sessionId);
+  const [session, allParts] = await Promise.all([getSession(sessionId), listAllParts()]);
   if (!session) notFound();
   const so = await getSecondOpinionForSession(sessionId);
   const parts = JSON.parse(session.parts_recommended_json || "[]");
@@ -32,6 +32,7 @@ export default async function CloseoutPage({
         primaryDiagnosis={session.primary_diagnosis}
         suggestedDiagnosis={suggestedDiagnosis}
         parts={parts}
+        allParts={allParts.map((p: any) => ({ partNumber: p.part_number, name: p.name, category: p.category, unitCost: p.unit_cost }))}
       />
     </div>
   );

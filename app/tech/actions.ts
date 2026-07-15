@@ -43,8 +43,7 @@ export async function advanceAction(formData: FormData) {
   if (!child) {
     redirect(`/tech/jobs/${jobId}/diagnose?session=${sessionId}&node=${nodeId}`);
   }
-  // Pass prev so the child node can render a working back button
-  redirect(`/tech/jobs/${jobId}/diagnose?session=${sessionId}&node=${child.id}&prev=${nodeId}`);
+  redirect(`/tech/jobs/${jobId}/diagnose?session=${sessionId}&node=${child.id}`);
 }
 
 export async function submitPhotoAction(formData: FormData) {

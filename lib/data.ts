@@ -14,6 +14,25 @@ export async function listJobsForTech(techId: string) {
   `;
 }
 
+export async function listCompletedJobsForTech(techId: string, limit = 20) {
+  return sql`
+    SELECT j.*, c.name AS customer_name, c.address AS customer_address,
+           e.type AS equipment_type, e.make AS equipment_make, e.model AS equipment_model,
+           o.actual_diagnosis, o.matched, o.closed_at
+    FROM jobs j
+    JOIN customers c ON c.id = j.customer_id
+    LEFT JOIN equipment e ON e.id = j.equipment_id
+    LEFT JOIN job_outcomes o ON o.job_id = j.id
+    WHERE j.tech_id = ${techId} AND j.status = 'closed'
+    ORDER BY o.closed_at DESC NULLS LAST
+    LIMIT ${limit}
+  `;
+}
+
+export async function listAllParts() {
+  return sql`SELECT id, part_number, name, category, unit_cost FROM parts ORDER BY category, name`;
+}
+
 export async function getJob(jobId: string) {
   const rows = await sql`
     SELECT j.*, c.name AS customer_name, c.address AS customer_address, c.phone AS customer_phone, c.id as customer_id,

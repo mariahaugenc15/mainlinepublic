@@ -1,15 +1,22 @@
 import Link from "next/link";
 import { requireRole } from "@/lib/guard";
-import { listJobsForTech } from "@/lib/data";
+import { listJobsForTech, listCompletedJobsForTech } from "@/lib/data";
 
 function formatTime(iso: string) {
   return new Date(iso).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
 }
 
+function formatDate(iso: string) {
+  return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
+
 export default async function TechJobQueue({ searchParams }: { searchParams: Promise<{ closed?: string }> }) {
   const user = await requireRole("TECH");
   const { closed } = await searchParams;
-  const jobs = await listJobsForTech(user.id);
+  const [jobs, completedJobs] = await Promise.all([
+    listJobsForTech(user.id),
+    listCompletedJobsForTech(user.id),
+  ]);
 
   return (
     <div className="mx-auto max-w-lg">
@@ -67,6 +74,40 @@ export default async function TechJobQueue({ searchParams }: { searchParams: Pro
           </Link>
         ))}
       </div>
+
+      {completedJobs.length > 0 && (
+        <div className="mt-8">
+          <h2 className="mb-3 text-base font-semibold text-navy-900">Completed Jobs</h2>
+          <div className="flex flex-col gap-2">
+            {completedJobs.map((j) => (
+              <Link
+                key={j.id}
+                href={`/tech/jobs/${j.id}`}
+                className="block rounded-xl border border-sand-200 bg-white p-4 shadow-sm active:bg-sand-50"
+              >
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-sm font-semibold text-navy-900">{j.customer_name}</p>
+                    <p className="text-xs text-ink-500">{j.customer_address}</p>
+                  </div>
+                  <span className="shrink-0 text-xs text-ink-400">{j.closed_at ? formatDate(j.closed_at) : ""}</span>
+                </div>
+                <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
+                  <span className="rounded-md bg-navy-900/5 px-2 py-0.5 font-medium text-navy-800">{j.job_type}</span>
+                  {j.actual_diagnosis && (
+                    <span className="text-ink-500 truncate max-w-[200px]">{j.actual_diagnosis}</span>
+                  )}
+                  {j.matched !== null && j.matched !== undefined && (
+                    <span className={`rounded-full px-2 py-0.5 font-semibold ${j.matched ? "bg-success/10 text-success" : "bg-amber-100 text-amber-700"}`}>
+                      {j.matched ? "AI accurate" : "AI corrected"}
+                    </span>
+                  )}
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
