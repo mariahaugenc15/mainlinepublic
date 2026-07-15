@@ -317,7 +317,8 @@ export async function listClosedSessions(filters: { techId?: string; matched?: s
   }
   const where = clauses.length ? `WHERE ${clauses.join(" AND ")}` : "";
   return sql(
-    `SELECT s.id AS session_id, s.primary_diagnosis, s.confidence, s.safety_critical, s.second_opinion_requested,
+    `SELECT s.id AS session_id, s.primary_diagnosis, s.confidence, s.safety_critical,
+            s.second_opinion_requested, s.est_repair_time_minutes,
             jo.actual_diagnosis, jo.matched, jo.closed_at,
             u.name AS tech_name, c.name AS customer_name, j.job_type
      FROM diagnostic_sessions s
@@ -383,12 +384,29 @@ export async function getTechPerformance() {
            COUNT(*) AS total_jobs,
            SUM(jo.matched) AS matched_n,
            AVG(s.confidence) AS avg_confidence,
-           SUM(s.second_opinion_requested) AS second_opinions
+           SUM(s.second_opinion_requested) AS second_opinions,
+           AVG(s.est_repair_time_minutes) AS avg_repair_minutes,
+           MIN(s.est_repair_time_minutes) AS min_repair_minutes,
+           MAX(s.est_repair_time_minutes) AS max_repair_minutes
     FROM diagnostic_sessions s
     JOIN job_outcomes jo ON jo.session_id = s.id
     JOIN users u ON u.id = s.tech_id
     GROUP BY u.id, u.name
     ORDER BY total_jobs DESC
+  `;
+}
+
+export async function getTechOpenJobForecast() {
+  return sql`
+    SELECT u.id AS tech_id, u.name AS tech_name,
+           COUNT(j.id) AS open_jobs,
+           SUM(s.est_repair_time_minutes) AS projected_minutes
+    FROM jobs j
+    JOIN users u ON u.id = j.tech_id
+    LEFT JOIN diagnostic_sessions s ON s.job_id = j.id AND s.status = 'in_progress'
+    WHERE j.status IN ('scheduled','in_progress')
+    GROUP BY u.id, u.name
+    ORDER BY projected_minutes DESC NULLS LAST
   `;
 }
 

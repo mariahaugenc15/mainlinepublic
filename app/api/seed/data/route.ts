@@ -236,38 +236,39 @@ export async function GET(req: NextRequest) {
     }
 
     // Diagnostic sessions (completed)
-    type SessionRow = [string,string,string,string,string,string,string,number,number,string];
+    // [id, job_id, tree_id, tech_id, started, completed, diagnosis, confidence, safety_critical, est_minutes, path]
+    type SessionRow = [string,string,string,string,string,string,string,number,number,number,string];
     const sessions: SessionRow[] = [
-      // Gas WH — mix of high/mid/low confidence
-      ['ses_h01','job_h01','tree_gwh','tech_1',daysAgo(55),daysAgo(55),'Thermocouple / pilot assembly failure',88,1,'[]'],
-      ['ses_h02','job_h02','tree_gwh','tech_2',daysAgo(45),daysAgo(45),'Thermocouple / pilot assembly failure',85,1,'[]'],
-      ['ses_h03','job_h03','tree_gwh','tech_1',daysAgo(38),daysAgo(38),'Dip tube collapse — cold-water short-circuit',72,1,'[]'],
-      ['ses_h04','job_h04','tree_gwh','tech_2',daysAgo(27),daysAgo(27),'Anode rod fully depleted, tank corrosion',65,0,'[]'],
-      ['ses_h05','job_h05','tree_gwh','tech_1',daysAgo(14),daysAgo(14),'Gas valve internal failure',58,0,'[]'],
+      // Gas WH
+      ['ses_h01','job_h01','tree_gwh','tech_1',daysAgo(55),daysAgo(55),'Thermocouple / pilot assembly failure',88,0,45,'[]'],
+      ['ses_h02','job_h02','tree_gwh','tech_2',daysAgo(45),daysAgo(45),'Thermocouple / pilot assembly failure',85,0,45,'[]'],
+      ['ses_h03','job_h03','tree_gwh','tech_1',daysAgo(38),daysAgo(38),'Dip tube collapse — cold-water short-circuit',72,0,60,'[]'],
+      ['ses_h04','job_h04','tree_gwh','tech_2',daysAgo(27),daysAgo(27),'Anode rod fully depleted, tank corrosion',65,0,90,'[]'],
+      ['ses_h05','job_h05','tree_gwh','tech_1',daysAgo(14),daysAgo(14),'Gas valve internal failure',58,1,120,'[]'],
       // Toilet
-      ['ses_t01','job_t01','tree_toilet','tech_2',daysAgo(50),daysAgo(50),'Flapper chain misadjusted or seat scaled',80,1,'[]'],
-      ['ses_t02','job_t02','tree_toilet','tech_1',daysAgo(41),daysAgo(41),'Fill valve diaphragm seeping past seal',73,1,'[]'],
-      ['ses_t03','job_t03','tree_toilet','tech_2',daysAgo(33),daysAgo(33),'Phantom flush — flapper seal hardened',69,1,'[]'],
-      ['ses_t04','job_t04','tree_toilet','tech_1',daysAgo(22),daysAgo(22),'Mineral scale blocking rim jets',64,0,'[]'],
-      ['ses_t05','job_t05','tree_toilet','tech_2',daysAgo(9),daysAgo(9),'Fill valve diaphragm seeping past seal',73,1,'[]'],
+      ['ses_t01','job_t01','tree_toilet','tech_2',daysAgo(50),daysAgo(50),'Flapper chain misadjusted or seat scaled',80,0,20,'[]'],
+      ['ses_t02','job_t02','tree_toilet','tech_1',daysAgo(41),daysAgo(41),'Fill valve diaphragm seeping past seal',73,0,25,'[]'],
+      ['ses_t03','job_t03','tree_toilet','tech_2',daysAgo(33),daysAgo(33),'Phantom flush — flapper seal hardened',69,0,20,'[]'],
+      ['ses_t04','job_t04','tree_toilet','tech_1',daysAgo(22),daysAgo(22),'Mineral scale blocking rim jets',64,0,30,'[]'],
+      ['ses_t05','job_t05','tree_toilet','tech_2',daysAgo(9),daysAgo(9),'Fill valve diaphragm seeping past seal',73,0,25,'[]'],
       // Drain
-      ['ses_d01','job_d01','tree_drain','tech_1',daysAgo(47),daysAgo(47),'Local trap/branch clog, hair or debris buildup',79,1,'[]'],
-      ['ses_d02','job_d02','tree_drain','tech_2',daysAgo(36),daysAgo(36),'Grease/soap buildup in shared branch line',71,1,'[]'],
-      ['ses_d03','job_d03','tree_drain','tech_1',daysAgo(25),daysAgo(25),'Main line obstruction — debris or root intrusion',64,0,'[]'],
-      ['ses_d04','job_d04','tree_drain','tech_2',daysAgo(12),daysAgo(12),'Local trap/branch clog, hair or debris buildup',79,1,'[]'],
+      ['ses_d01','job_d01','tree_drain','tech_1',daysAgo(47),daysAgo(47),'Local trap/branch clog, hair or debris buildup',79,0,30,'[]'],
+      ['ses_d02','job_d02','tree_drain','tech_2',daysAgo(36),daysAgo(36),'Grease/soap buildup in shared branch line',71,0,60,'[]'],
+      ['ses_d03','job_d03','tree_drain','tech_1',daysAgo(25),daysAgo(25),'Main line obstruction — debris or root intrusion',64,0,90,'[]'],
+      ['ses_d04','job_d04','tree_drain','tech_2',daysAgo(12),daysAgo(12),'Local trap/branch clog, hair or debris buildup',79,0,30,'[]'],
       // Sump
-      ['ses_s01','job_s01','tree_sump','tech_1',daysAgo(52),daysAgo(52),'Float switch mechanically stuck',85,1,'[]'],
-      ['ses_s02','job_s02','tree_sump','tech_2',daysAgo(31),daysAgo(31),'Check valve failure allowing backflow into basin',72,1,'[]'],
-      ['ses_s03','job_s03','tree_sump','tech_1',daysAgo(18),daysAgo(18),'Impeller jammed with debris, or motor bearing seizure',68,0,'[]'],
+      ['ses_s01','job_s01','tree_sump','tech_1',daysAgo(52),daysAgo(52),'Float switch mechanically stuck',85,0,30,'[]'],
+      ['ses_s02','job_s02','tree_sump','tech_2',daysAgo(31),daysAgo(31),'Check valve failure allowing backflow into basin',72,0,40,'[]'],
+      ['ses_s03','job_s03','tree_sump','tech_1',daysAgo(18),daysAgo(18),'Impeller jammed with debris, or motor bearing seizure',68,0,50,'[]'],
       // Pressure
-      ['ses_p01','job_p01','tree_pressure','tech_2',daysAgo(43),daysAgo(43),'Partially closed shutoff or collapsed flexible supply line',76,1,'[]'],
-      ['ses_p02','job_p02','tree_pressure','tech_1',daysAgo(29),daysAgo(29),'PRV failure or interior pipe scaling',66,1,'[]'],
-      ['ses_p03','job_p03','tree_pressure','tech_2',daysAgo(7),daysAgo(7),'Partially closed shutoff or collapsed flexible supply line',76,0,'[]'],
+      ['ses_p01','job_p01','tree_pressure','tech_2',daysAgo(43),daysAgo(43),'Partially closed shutoff or collapsed flexible supply line',76,0,20,'[]'],
+      ['ses_p02','job_p02','tree_pressure','tech_1',daysAgo(29),daysAgo(29),'PRV failure or interior pipe scaling',66,0,90,'[]'],
+      ['ses_p03','job_p03','tree_pressure','tech_2',daysAgo(7),daysAgo(7),'Partially closed shutoff or collapsed flexible supply line',76,0,20,'[]'],
     ];
-    for (const [id,job_id,tree_id,tech_id,started,completed,diag,conf,sc,path] of sessions) {
+    for (const [id,job_id,tree_id,tech_id,started,completed,diag,conf,sc,est_min,path] of sessions) {
       await sql(
-        `INSERT INTO diagnostic_sessions (id,job_id,tree_id,tech_id,started_at,completed_at,path_json,primary_diagnosis,confidence,safety_critical,status) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,'completed')`,
-        [id,job_id,tree_id,tech_id,started,completed,path,diag,conf,sc]
+        `INSERT INTO diagnostic_sessions (id,job_id,tree_id,tech_id,started_at,completed_at,path_json,primary_diagnosis,confidence,safety_critical,est_repair_time_minutes,status) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,'completed')`,
+        [id,job_id,tree_id,tech_id,started,completed,path,diag,conf,sc,est_min]
       );
     }
 
