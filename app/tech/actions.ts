@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { requireRole } from "@/lib/guard";
 import {
   appendPathStep,
+  cancelSession,
   closeJob,
   createEstimate,
   createIntakeJob,
@@ -13,6 +14,7 @@ import {
   getJob,
   getSecondOpinion,
   getSession,
+  getSessionForJob,
   getTreeIdForEquipmentType,
   getUserHourlyRate,
   markEstimateSent,
@@ -126,6 +128,8 @@ export async function startPhotoAction(formData: FormData) {
 
 export async function cancelJobDiagnosticAction(jobId: string) {
   await requireRole("TECH");
+  const session = await getSessionForJob(jobId);
+  if (session) await cancelSession(session.id);
   await setJobStatus(jobId, "scheduled");
   redirect(`/tech/jobs/${jobId}`);
 }

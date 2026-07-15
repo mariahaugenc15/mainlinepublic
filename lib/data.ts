@@ -133,8 +133,12 @@ export async function getSession(sessionId: string) {
 }
 
 export async function getSessionForJob(jobId: string) {
-  const rows = await sql`SELECT * FROM diagnostic_sessions WHERE job_id = ${jobId} ORDER BY started_at DESC LIMIT 1`;
+  const rows = await sql`SELECT * FROM diagnostic_sessions WHERE job_id = ${jobId} AND status != 'canceled' ORDER BY started_at DESC LIMIT 1`;
   return rows[0] ?? null;
+}
+
+export async function cancelSession(sessionId: string) {
+  await sql`UPDATE diagnostic_sessions SET status = 'canceled' WHERE id = ${sessionId}`;
 }
 
 export async function appendPathStep(sessionId: string, optionValue: string) {
