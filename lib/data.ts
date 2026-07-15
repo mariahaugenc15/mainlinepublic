@@ -47,6 +47,7 @@ const treeByEquipmentType: Record<string, string> = {
   "Drain Line": "tree_drain",
   "Water Supply System": "tree_pressure",
   "Sump Pump": "tree_sump",
+  "Sewer Line": "tree_sewer",
 };
 
 export async function listTrees() {
