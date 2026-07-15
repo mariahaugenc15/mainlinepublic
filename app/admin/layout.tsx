@@ -2,6 +2,7 @@ import Link from "next/link";
 import { requireRole } from "@/lib/guard";
 import { logoutAction } from "@/app/actions";
 import Brand from "@/app/_components/Brand";
+import { getBillingState } from "@/lib/billing";
 
 const NAV: ({ href: string; label: string } | null)[] = [
   { href: "/admin", label: "Overview" },
@@ -16,10 +17,14 @@ const NAV: ({ href: string; label: string } | null)[] = [
   null,
   { href: "/admin/company", label: "Company Profile" },
   { href: "/admin/pricing", label: "Pricing" },
+  { href: "/admin/billing", label: "Billing" },
 ];
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const user = await requireRole("ADMIN");
+  const billing = await getBillingState();
+  const showTrialBanner = billing.status === "trialing" && billing.trialEndsAt;
+  const showPastDueBanner = billing.status === "past_due";
 
   return (
     <div className="flex min-h-screen bg-sand-50">
@@ -50,7 +55,21 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           </form>
         </div>
       </aside>
-      <main className="flex-1 overflow-x-hidden px-8 py-8">{children}</main>
+      <div className="flex flex-1 flex-col overflow-x-hidden">
+        {showTrialBanner && (
+          <div className="flex items-center justify-between bg-amber-500 px-6 py-2 text-sm font-medium text-navy-950">
+            <span>Trial ends {new Date(billing.trialEndsAt!).toLocaleDateString("en-US", { month: "long", day: "numeric" })} — add a payment method to keep access.</span>
+            <Link href="/admin/billing" className="rounded bg-navy-950/10 px-3 py-1 text-xs font-semibold hover:bg-navy-950/20">Manage Billing</Link>
+          </div>
+        )}
+        {showPastDueBanner && (
+          <div className="flex items-center justify-between bg-danger px-6 py-2 text-sm font-medium text-white">
+            <span>Your payment is past due — some features may be restricted.</span>
+            <Link href="/admin/billing" className="rounded bg-white/10 px-3 py-1 text-xs font-semibold hover:bg-white/20">Update Payment</Link>
+          </div>
+        )}
+        <main className="flex-1 px-8 py-8">{children}</main>
+      </div>
     </div>
   );
 }
