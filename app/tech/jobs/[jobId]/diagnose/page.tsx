@@ -22,11 +22,11 @@ export default async function DiagnosePage({
   searchParams,
 }: {
   params: Promise<{ jobId: string }>;
-  searchParams: Promise<{ session?: string; node?: string }>;
+  searchParams: Promise<{ session?: string; node?: string; prev?: string }>;
 }) {
   const user = await requireRole("TECH");
   const { jobId } = await params;
-  const { session: sessionId, node: nodeIdParam } = await searchParams;
+  const { session: sessionId, node: nodeIdParam, prev: prevNodeId } = await searchParams;
   if (!sessionId) notFound();
 
   const [job, session0] = await Promise.all([getJob(jobId), getSession(sessionId)]);
@@ -43,7 +43,7 @@ export default async function DiagnosePage({
     const options = JSON.parse(node.options_json || "[]") as { value: string; label: string }[];
     return (
       <div className="mx-auto max-w-lg">
-        <BackBar jobId={jobId} treeName={tree.name} />
+        <BackBar jobId={jobId} treeName={tree.name} sessionId={sessionId!} prevNodeId={prevNodeId} />
         <h1 className="mb-4 text-xl font-semibold text-navy-900">{node.prompt_text}</h1>
         <div className="flex flex-col gap-3">
           {options.map((opt) => (
@@ -70,7 +70,7 @@ export default async function DiagnosePage({
     const categories = (await listVisionCategories()).map((c: any) => ({ id: c.id, name: c.name }));
     return (
       <div className="mx-auto max-w-lg">
-        <BackBar jobId={jobId} treeName={tree.name} />
+        <BackBar jobId={jobId} treeName={tree.name} sessionId={sessionId!} prevNodeId={prevNodeId} />
         <PhotoCapture jobId={jobId} sessionId={sessionId} nodeId={node.id} prompt={node.prompt_text} categories={categories} />
       </div>
     );
@@ -99,7 +99,7 @@ export default async function DiagnosePage({
 
   return (
     <div className="mx-auto max-w-lg">
-      <BackBar jobId={jobId} treeName={tree.name} />
+      <BackBar jobId={jobId} treeName={tree.name} sessionId={sessionId!} prevNodeId={prevNodeId} />
 
       {!!session.safety_critical && (
         <div className="mb-4 rounded-lg border border-danger/30 bg-danger/10 px-4 py-3 text-sm font-semibold text-danger">
@@ -218,10 +218,14 @@ export default async function DiagnosePage({
   );
 }
 
-function BackBar({ jobId, treeName }: { jobId: string; treeName: string }) {
+function BackBar({ jobId, treeName, sessionId, prevNodeId }: { jobId: string; treeName: string; sessionId: string; prevNodeId?: string }) {
+  const backHref = prevNodeId
+    ? `/tech/jobs/${jobId}/diagnose?session=${sessionId}&node=${prevNodeId}`
+    : `/tech/jobs/${jobId}`;
+  const backLabel = prevNodeId ? "← Back" : `← ${treeName}`;
   return (
     <div className="mb-4 flex items-center justify-between">
-      <Link href={`/tech/jobs/${jobId}`} className="text-sm font-medium text-navy-700">&larr; {treeName}</Link>
+      <Link href={backHref} className="text-sm font-medium text-navy-700">{backLabel}</Link>
     </div>
   );
 }
