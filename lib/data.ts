@@ -262,6 +262,19 @@ export async function closeJob(jobId: string, sessionId: string, techId: string,
   }
 }
 
+export async function deleteJob(jobId: string) {
+  // Remove dependent records before deleting the job
+  await sql`DELETE FROM job_outcomes WHERE job_id = ${jobId}`;
+  await sql`DELETE FROM estimates WHERE job_id = ${jobId}`;
+  const sessions = await sql`SELECT id FROM diagnostic_sessions WHERE job_id = ${jobId}`;
+  for (const s of sessions) {
+    await sql`DELETE FROM photo_analyses WHERE session_id = ${s.id}`;
+    await sql`DELETE FROM second_opinions WHERE session_id = ${s.id}`;
+  }
+  await sql`DELETE FROM diagnostic_sessions WHERE job_id = ${jobId}`;
+  await sql`DELETE FROM jobs WHERE id = ${jobId}`;
+}
+
 export async function getJobOutcome(jobId: string) {
   const rows = await sql`SELECT * FROM job_outcomes WHERE job_id = ${jobId}`;
   return rows[0] ?? null;

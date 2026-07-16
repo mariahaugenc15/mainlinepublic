@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { requireRole } from "@/lib/guard";
 import { getCustomerHistory, getJob, getSessionForJob, getTruckForTech, getTruckStock, getTreeIdForEquipmentType } from "@/lib/data";
 import { startDiagnosticAction, cancelJobDiagnosticAction } from "@/app/tech/actions";
+import DeleteJobButton from "@/app/tech/_components/DeleteJobButton";
 
 export default async function JobDetailPage({ params }: { params: Promise<{ jobId: string }> }) {
   const user = await requireRole("TECH");
@@ -108,6 +109,10 @@ export default async function JobDetailPage({ params }: { params: Promise<{ jobI
             Check Truck Stock
           </Link>
         )}
+
+        <div className="mt-2">
+          <DeleteJobButton jobId={jobId} />
+        </div>
       </div>
     </div>
   );
