@@ -6,6 +6,7 @@ import {
   appendPathStep,
   cancelSession,
   closeJob,
+  deleteJob,
   createEstimate,
   createIntakeJob,
   createSession,
@@ -124,6 +125,12 @@ export async function startPhotoAction(formData: FormData) {
   // Record photo analysis before tree navigation begins
   await recordPhotoAnalysis(sessionId, null, categoryId, confidence);
   redirect(`/tech/jobs/${jobId}/diagnose?session=${sessionId}`);
+}
+
+export async function deleteJobAction(jobId: string) {
+  await requireRole("TECH");
+  await deleteJob(jobId);
+  redirect("/tech");
 }
 
 export async function cancelJobDiagnosticAction(jobId: string) {
